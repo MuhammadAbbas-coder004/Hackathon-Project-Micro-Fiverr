@@ -15,6 +15,16 @@ const generateToken = (userId) => {
 
 // POST /api/auth/register
 router.post("/register", async (req, res) => {
+  console.log("📝 Registration attempt received for email:", req.body?.email);
+  
+  // Check if database is connected
+  if (User.db.readyState !== 1) {
+    console.error("❌ Registration failed: Database not connected. State:", User.db.readyState);
+    return res.status(503).json({ 
+      message: "Database is not connected. Please try again in 10 seconds or check server logs if the problem persists." 
+    });
+  }
+
   try {
     const { name, email, password, role, location } = req.body;
 
@@ -32,7 +42,7 @@ router.post("/register", async (req, res) => {
     }
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ email }).maxTimeMS(5000); 
     if (existingUser) {
       return res
         .status(400)
@@ -40,7 +50,8 @@ router.post("/register", async (req, res) => {
     }
 
     // Create new user (password is hashed automatically via pre-save hook)
-    const user = await User.create({
+    console.log("⏳ Saving user to database...");
+    const savedUser = await User.create({
       name,
       email,
       password,
@@ -48,23 +59,43 @@ router.post("/register", async (req, res) => {
       location: location || "",
     });
 
+    console.log("✅ User saved successfully:", savedUser?._id);
+
     // Generate token
-    const token = generateToken(user._id);
+    const token = generateToken(savedUser._id);
 
     res.status(201).json({
       message: "Registration successful!",
       token,
       user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        location: user.location,
+        id: savedUser._id,
+        name: savedUser.name,
+        email: savedUser.email,
+        role: savedUser.role,
+        location: savedUser.location,
       },
     });
   } catch (error) {
-    console.error("Register error:", error);
-    res.status(500).json({ message: "Server error during registration." });
+    console.error("❌ Register error detailed:", error);
+    
+    // Check for specific mongoose errors
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(val => val.message);
+      return res.status(400).json({ message: messages.join(', ') });
+    }
+    
+    if (error.code === 11000) {
+      return res.status(400).json({ message: "Email already exists." });
+    }
+
+    if (error.name === 'MongooseError' && error.message.includes('buffering timed out')) {
+      return res.status(503).json({ message: "Database connection timeout. Please ensure your IP is whitelisted in MongoDB Atlas." });
+    }
+
+    res.status(500).json({ 
+      message: "Server error during registration.",
+      details: error.message 
+    });
   }
 });
 

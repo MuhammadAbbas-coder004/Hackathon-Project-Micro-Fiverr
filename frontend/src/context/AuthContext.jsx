@@ -82,26 +82,28 @@ export const AuthProvider = ({ children }) => {
     console.log(`📡 Attempting registration for: ${userData.email}`);
     try {
       const response = await api.post('/auth/register', userData);
-      const { token: newToken, user: newUser } = response.data;
       
-      localStorage.setItem('token', newToken);
-      localStorage.setItem('user', JSON.stringify(newUser)); // persist user data
-      setToken(newToken);
-      setUser(newUser);
-      
-      console.log('✅ Registration successful');
-      return { success: true, user: newUser };
+      console.log('✅ Registration successful (Auto-login disabled)');
+      return { success: true, message: response.data?.message || "Success" };
     } catch (error) {
       console.error('❌ Registration error detailed:', error);
       let msg = 'Registration failed';
       
       if (error.response) {
-        msg = error.response.data?.message || `Server error: ${error.response.status}`;
+        const { status, data } = error.response;
+        if (status === 502 || status === 504) {
+          msg = 'Backend server is not reachable (502/504). Please ensure you ran "npm run dev" from the root folder and check if the backend crashed.';
+        } else if (status === 503) {
+          msg = 'Database is not connected (503). If you are using MongoDB Atlas, please ensure your current IP address is whitelisted in the Atlas dashboard.';
+        } else {
+          msg = data?.message || `Server error: ${status}`;
+        }
       } else if (error.request) {
-        msg = 'No response from server. Please check if your backend is running.';
+        msg = 'No response from server. Make sure the backend is running on port 5000 and that no other process is blocking the port.';
       } else {
         msg = error.message;
       }
+
       
       return { success: false, message: msg };
     } finally {

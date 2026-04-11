@@ -1,0 +1,14 @@
+{
+  "name": "micro-fiverr-root",
+  "version": "1.0.0",
+  "description": "Root package to run both frontend and backend",
+  "scripts": {
+    "dev:backend": "npm run dev --prefix back-end",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "install-all": "npm install --prefix back-end && npm install --prefix frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

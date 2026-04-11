@@ -9,7 +9,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:5173", "http://localhost:3000"], // Explicitly allow Vite and React default ports
+    origin: ["http://localhost:5173", "http://localhost:3000", "http://localhost:5174", "http://127.0.0.1:5174"], // Explicitly allow Vite and React default ports
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true
   }
@@ -114,7 +114,7 @@ io.on("connection", (socket) => {
 // CORS configuration
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://localhost:3000"], // Allow Vite and CRA
+    origin: ["http://localhost:5173", "http://localhost:3000", "http://localhost:5174", "http://127.0.0.1:5174"], // Allow Vite and CRA
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -160,8 +160,23 @@ app.use("/api/admin", require("./routes/admin"));
 app.set("socketio", io);
 
 // Simple health check route
+app.get("/api/health", (req, res) => {
+  const dbStatus = mongoose.connection.readyState === 1 ? "Connected ✅" : "Disconnected ❌";
+  res.json({ 
+    status: "ok", 
+    database: dbStatus,
+    message: "🚀 Micro Fiverr API is healthy and reachable!",
+    time: new Date()
+  });
+});
+
 app.get("/", (req, res) => {
-  res.json({ message: "🚀 Micro Fiverr API is running ok bro!" });
+  const dbStatus = mongoose.connection.readyState === 1 ? "Connected ✅" : "Disconnected ❌";
+  res.json({ 
+    message: "🚀 Micro Fiverr API is running ok bro!", 
+    database: dbStatus,
+    usage: "Use /api/health for detailed status check." 
+  });
 });
 
 // ==================== CATCH ALL 404 (JSON) ====================
@@ -190,11 +205,16 @@ if (!JWT_SECRET) {
 }
 
 const connectDB = async () => {
+  console.log("⏳ Attempting to connect to MongoDB...");
   try {
-    await mongoose.connect(MONGO_URI);
+    // Mongoose 9+ connect options
+    await mongoose.connect(MONGO_URI, {
+      serverSelectionTimeoutMS: 10000, // Fail after 10s if can't find server
+    });
     console.log("✅ MongoDB Connected Successfully!");
   } catch (err) {
     console.error("❌ MongoDB Connection Error:", err.message);
+    console.log("💡 Tip: Check if your IP is whitelisted in MongoDB Atlas and if your .env credentials are correct.");
     console.log("⏳ Retrying MongoDB connection in 5 seconds...");
     setTimeout(connectDB, 5000);
   }
@@ -210,15 +230,15 @@ mongoose.connection.on("reconnected", () => {
 
 // ==================== ERROR HANDLING (GLOBAL) ====================
 process.on('uncaughtException', (err) => {
-  console.error('💥 UNCAUGHT EXCEPTION! Shutting down...');
+  console.error('💥 UNCAUGHT EXCEPTION! Logging error...');
   console.error(err.name, err.message, err.stack);
-  process.exit(1);
+  // process.exit(1); // Do not exit to avoid 502/504 errors in dev
 });
 
 process.on('unhandledRejection', (err) => {
-  console.log('💥 UNHANDLED REJECTION! Shutting down...');
+  console.log('💥 UNHANDLED REJECTION! Logging error...');
   console.log(err.name, err.message);
-  process.exit(1);
+  // process.exit(1); // Do not exit to avoid 502/504 errors in dev
 });
 
 // Start the Server unconditionally to ensure APIs remain reachable
