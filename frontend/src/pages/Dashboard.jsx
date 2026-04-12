@@ -64,9 +64,6 @@ const AuthCheckingSkeleton = () => (
   </div>
 );
 
-/* ─────────────────────────────────────────────
-   Navbar
-───────────────────────────────────────────── */
 const Navbar = ({ user, onLogout }) => {
   const isFreelancer = user?.role === 'freelancer';
   const initials = user?.name

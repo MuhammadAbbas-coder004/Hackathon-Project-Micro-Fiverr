@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 
-// shadcn/ui
 import { Button } from '@/components/ui/Button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/Badge';
@@ -9,71 +8,90 @@ import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+
+// ── react-icons replace lucide ──
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
+  MdDashboard,
+  MdWork,
+  MdShoppingBag,
+  MdChat,
+  MdStar,
+  MdAccountBalanceWallet,
+  MdSettings,
+  MdLogout,
+  MdNotifications,
+  MdMenu,
+  MdChevronRight,
+  MdPerson,
+  MdHelpOutline,
+  MdKeyboardArrowLeft,
+  MdKeyboardArrowRight,
+  MdSearch,
+  MdFormatListBulleted,
+  MdAccessTime,
+  MdAddCircleOutline,
+  MdTrendingUp,
+} from 'react-icons/md';
+import { Zap } from 'lucide-react';
+import { motion } from 'framer-motion';
 
-// Icons
-import {
-  LayoutDashboard,
-  Briefcase,
-  ShoppingBag,
-  MessageSquare,
-  Star,
-  Wallet,
-  Settings,
-  LogOut,
-  Bell,
-  Menu,
-  ChevronRight,
-  User,
-  HelpCircle,
-  PanelLeftClose,
-  PanelLeftOpen,
-} from 'lucide-react';
-
-/* ─────────────────────────────────────────
-   Nav config per role
-───────────────────────────────────────── */
-const freelancerNav = [
-  { label: 'Overview',    icon: LayoutDashboard, href: '/dashboard/provider' },
-  { label: 'My Services', icon: Briefcase,        href: '/dashboard/provider/services' },
-  { label: 'Orders',      icon: ShoppingBag,      href: '/dashboard/provider/orders' },
-  { label: 'Messages',    icon: MessageSquare,    href: '/dashboard/provider/messages',  badge: 3 },
-  { label: 'Reviews',     icon: Star,             href: '/dashboard/provider/reviews' },
-  { label: 'Earnings',    icon: Wallet,           href: '/dashboard/provider/earnings' },
-];
-
-const customerNav = [
-  { label: 'Overview',   icon: LayoutDashboard, href: '/dashboard' },
-  { label: 'Browse',     icon: ShoppingBag,     href: '/dashboard/browse' },
-  { label: 'My Orders',  icon: Briefcase,       href: '/dashboard/orders' },
-  { label: 'Messages',   icon: MessageSquare,   href: '/dashboard/messages', badge: 1 },
-  { label: 'Favourites', icon: Star,            href: '/dashboard/favourites' },
-  { label: 'Wallet',     icon: Wallet,          href: '/dashboard/wallet' },
-];
-
-const bottomNav = [
-  { label: 'Settings', icon: Settings, href: '/dashboard/settings' },
-  { label: 'Help',     icon: HelpCircle, href: '/dashboard/help' },
-];
+const navGroups = {
+  freelancer: [
+    { 
+      label: 'Main', 
+      items: [
+        { label: 'Overview',    Icon: MdDashboard,            href: '/dashboard/provider' },
+        { label: 'My Services', Icon: MdStar,                 href: '/dashboard/provider/services', badge: '3' },
+        { label: 'Applications', Icon: MdFormatListBulleted,  href: '/dashboard/provider/applications', badge: '5' },
+        { label: 'Active Jobs',  Icon: MdAccessTime,          href: '/dashboard/provider/active', badge: '2' },
+      ]
+    },
+    {
+      label: 'Work',
+      items: [
+        { label: 'Post a Job',      Icon: MdAddCircleOutline,   href: '/dashboard/provider/services/create' },
+        { label: 'My Posted Jobs',  Icon: MdWork,               href: '/dashboard/provider/jobs' },
+        { label: 'Chat',            Icon: MdChat,               href: '/dashboard/provider/messages', badge: '3', badgeRed: true },
+      ]
+    },
+    {
+      label: 'Account',
+      items: [
+        { label: 'Reviews',         Icon: MdStar,               href: '/dashboard/provider/reviews' },
+        { label: 'Notifications',   Icon: MdNotifications,      href: '/dashboard/provider/notifications' },
+        { label: 'Settings',        Icon: MdSettings,           href: '/dashboard/provider/settings' },
+      ]
+    }
+  ],
+  customer: [
+    { 
+      label: 'Main', 
+      items: [
+        { label: 'Overview',   Icon: MdDashboard,            href: '/dashboard' },
+        { label: 'Browse',     Icon: MdShoppingBag,          href: '/dashboard/browse' },
+        { label: 'My Orders',  Icon: MdWork,                 href: '/dashboard/orders' },
+      ]
+    },
+    {
+      label: 'Account',
+      items: [
+        { label: 'Messages',   Icon: MdChat,                 href: '/dashboard/messages', badge: 1 },
+        { label: 'Favourites', Icon: MdStar,                 href: '/dashboard/favourites' },
+        { label: 'Wallet',     Icon: MdAccountBalanceWallet, href: '/dashboard/wallet' },
+      ]
+    }
+  ]
+};
 
 /* ─────────────────────────────────────────
    Single nav item
 ───────────────────────────────────────── */
 const NavItem = ({ item, collapsed }) => {
-  const Icon = item.icon;
+  const { Icon } = item;
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -81,23 +99,24 @@ const NavItem = ({ item, collapsed }) => {
         <TooltipTrigger asChild>
           <NavLink
             to={item.href}
-            end={item.href === '/dashboard'}
+            end={item.href === '/dashboard' || item.href === '/dashboard/provider'}
             className={({ isActive }) =>
-              `group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150
+              `group flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 mb-1
                ${isActive
-                 ? 'bg-primary text-primary-foreground shadow-sm'
-                 : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                 ? 'bg-[#f97316]/20 text-[#f97316]'
+                 : 'text-white/60 hover:text-white hover:bg-white/5'
                }
                ${collapsed ? 'justify-center px-2' : ''}
               `
             }
           >
-            <Icon className="h-[18px] w-[18px] shrink-0" />
+            <Icon size={17} className={`shrink-0 ${item.badgeRed ? 'text-red-500' : ''}`} />
             {!collapsed && (
               <>
-                <span className="flex-1 truncate">{item.label}</span>
+                <span className="flex-1 truncate leading-none">{item.label}</span>
                 {item.badge && (
-                  <Badge className="h-5 min-w-5 px-1.5 text-[10px] leading-none">
+                  <Badge className={`h-4 min-w-4 px-1.5 text-[9px] leading-none border-none
+                    ${item.badgeRed ? 'bg-red-500/20 text-red-500' : 'bg-[#f97316]/20 text-[#f97316]'}`}>
                     {item.badge}
                   </Badge>
                 )}
@@ -108,7 +127,11 @@ const NavItem = ({ item, collapsed }) => {
         {collapsed && (
           <TooltipContent side="right" className="flex items-center gap-2">
             {item.label}
-            {item.badge && <Badge className="h-4 px-1 text-[10px]">{item.badge}</Badge>}
+            {item.badge && (
+              <Badge className="h-4 px-1 text-[10px] bg-orange-500 hover:bg-orange-500">
+                {item.badge}
+              </Badge>
+            )}
           </TooltipContent>
         )}
       </Tooltip>
@@ -117,7 +140,7 @@ const NavItem = ({ item, collapsed }) => {
 };
 
 /* ─────────────────────────────────────────
-   Sidebar content (shared between desktop & Sheet)
+   Sidebar content
 ───────────────────────────────────────── */
 const SidebarContent = ({ user, navItems, collapsed, onLogout }) => {
   const isFreelancer = user?.role === 'freelancer';
@@ -128,94 +151,78 @@ const SidebarContent = ({ user, navItems, collapsed, onLogout }) => {
   return (
     <div className="flex flex-col h-full">
 
-      {/* Logo */}
-      <div className={`flex items-center gap-3 px-4 py-5 ${collapsed ? 'justify-center px-2' : ''}`}>
-        <div className="h-8 w-8 rounded-xl bg-primary flex items-center justify-center shrink-0">
-          <Briefcase className="h-4 w-4 text-primary-foreground" />
+      {/* Official Website Logo Section */}
+      <div className={`p-6 flex items-center gap-3 ${collapsed ? 'justify-center px-2' : ''}`}>
+        <div className="relative w-8 h-8 flex items-center justify-center shrink-0">
+          <motion.div 
+            animate={{ rotate: [0, 10, 0] }}
+            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute inset-0 bg-orange-500 rounded-lg blur-[2px] opacity-20" 
+          />
+          <Zap className="relative h-6 w-6 text-orange-500 fill-orange-500/20" />
         </div>
         {!collapsed && (
-          <span className="font-semibold text-base tracking-tight">FreelanceHub</span>
+          <div className="flex flex-col leading-none">
+            <span className="text-[15px] font-black tracking-tighter text-white uppercase">
+              Micro<span className="text-[#f97316]">Fiverr</span>
+            </span>
+            <span className="text-[6px] font-bold text-white/20 uppercase tracking-[0.2em] mt-0.5">Nexus_Network</span>
+          </div>
         )}
       </div>
 
-      <Separator />
-
-      {/* Role badge */}
-      {!collapsed && (
-        <div className="px-4 pt-4 pb-2">
-          <Badge
-            variant={isFreelancer ? 'default' : 'secondary'}
-            className="text-[11px] font-medium"
-          >
-            {isFreelancer ? 'Freelancer' : 'Customer'}
-          </Badge>
+      {/* User Status Section */}
+      <div className={`px-6 py-4 flex items-center gap-4 ${collapsed ? 'justify-center px-2' : ''}`}>
+        <div className="relative shrink-0">
+          <div className="absolute -inset-1 blur-sm bg-gradient-to-r from-[#f97316] to-orange-400 opacity-20" />
+          <Avatar className="h-[38px] w-[38px] rounded-xl relative ring-1 ring-white/10">
+            <AvatarImage src={user?.avatar} />
+            <AvatarFallback className="text-[12px] bg-white/5 text-white font-bold uppercase">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
         </div>
-      )}
-
-      {/* Main nav */}
-      <ScrollArea className="flex-1 px-2 py-2">
-        <nav className="flex flex-col gap-0.5">
-          {navItems.map(item => (
-            <NavItem key={item.href} item={item} collapsed={collapsed} />
-          ))}
-        </nav>
-      </ScrollArea>
-
-      {/* Bottom nav */}
-      <div className="px-2 pb-2">
-        <Separator className="mb-2" />
-        <nav className="flex flex-col gap-0.5">
-          {bottomNav.map(item => (
-            <NavItem key={item.href} item={item} collapsed={collapsed} />
-          ))}
-        </nav>
+        {!collapsed && (
+          <div className="flex-1 min-w-0">
+            <p className="text-[14px] font-bold text-white leading-tight truncate">{user?.name || 'User'}</p>
+            <div className="flex items-center gap-1.5 mt-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#f97316] animate-pulse" />
+              <p className="text-[10px] text-white/50 font-bold tracking-widest uppercase">Elite Node</p>
+            </div>
+          </div>
+        )}
       </div>
 
-      <Separator />
+      {/* Main nav groups */}
+      <ScrollArea className="flex-1 px-2.5 py-4">
+        {navGroups[user.role].map(group => (
+          <div key={group.label} className="mb-6">
+            {!collapsed && (
+              <p className="text-[9px] font-bold text-white/30 uppercase tracking-[0.12em] px-3 mb-2">
+                {group.label}
+              </p>
+            )}
+            <nav className="flex flex-col gap-0.5">
+              {group.items.map(item => (
+                <NavItem key={item.href} item={item} collapsed={collapsed} />
+              ))}
+            </nav>
+          </div>
+        ))}
+      </ScrollArea>
 
-      {/* User profile */}
-      <div className={`p-3 ${collapsed ? 'flex justify-center' : ''}`}>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              className={`flex items-center gap-3 w-full rounded-lg p-2 hover:bg-accent transition-colors text-left
-                          ${collapsed ? 'justify-center' : ''}`}
-            >
-              <Avatar className="h-8 w-8 shrink-0">
-                <AvatarImage src={user?.avatar} />
-                <AvatarFallback className="text-xs bg-primary text-primary-foreground font-semibold">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
-              {!collapsed && (
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium leading-tight truncate">{user?.name || 'User'}</p>
-                  <p className="text-xs text-muted-foreground leading-tight truncate">{user?.email}</p>
-                </div>
-              )}
-              {!collapsed && <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />}
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent side="right" align="end" className="w-52">
-            <DropdownMenuLabel className="font-normal">
-              <div className="flex flex-col gap-0.5">
-                <p className="font-semibold text-sm">{user?.name}</p>
-                <p className="text-xs text-muted-foreground">{user?.email}</p>
-              </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <User className="mr-2 h-4 w-4" /> Profile
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Settings className="mr-2 h-4 w-4" /> Settings
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={onLogout}>
-              <LogOut className="mr-2 h-4 w-4" /> Logout
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+      {/* Attractive Logout area */}
+      <div className="p-4 mt-auto">
+        <button
+          onClick={onLogout}
+          className={`group flex items-center gap-3 w-full rounded-2xl p-3.5 text-white/30 hover:text-red-500 hover:bg-red-500/5 transition-all duration-300
+                      ${collapsed ? 'justify-center' : ''}`}
+        >
+          <div className="w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-red-500/10 transition-colors">
+            <MdLogout size={18} className="shrink-0" />
+          </div>
+          {!collapsed && <span className="text-[11px] font-black uppercase tracking-[0.2em]">Logout</span>}
+        </button>
       </div>
 
     </div>
@@ -223,47 +230,51 @@ const SidebarContent = ({ user, navItems, collapsed, onLogout }) => {
 };
 
 /* ─────────────────────────────────────────
-   Top bar (mobile + notification bell)
+   Top bar
 ───────────────────────────────────────── */
-const TopBar = ({ user, navItems, onLogout, notifications }) => (
-  <header className="h-14 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center px-4 gap-3 sticky top-0 z-40">
+const TopBar = ({ user, navItems, onLogout, notifications }) => {
+  const isFreelancer = user?.role === 'freelancer';
+  const displayTitle = location.pathname.split('/').pop()?.replace('-', ' ') || 'Overview';
 
-    {/* Mobile sidebar sheet */}
-    <Sheet>
-      <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="md:hidden">
-          <Menu className="h-5 w-5" />
-        </Button>
-      </SheetTrigger>
-      <SheetContent side="left" className="w-64 p-0">
-        <SheetHeader className="sr-only">
-          <SheetTitle>Navigation</SheetTitle>
-        </SheetHeader>
-        <SidebarContent user={user} navItems={navItems} collapsed={false} onLogout={onLogout} />
-      </SheetContent>
-    </Sheet>
+  return (
+    <header className="h-[64px] bg-[#0a0a0a] flex items-center px-6 gap-4 sticky top-0 z-40">
 
-    {/* Page breadcrumb / title — slot for Outlet to fill if desired */}
-    <div className="flex-1" />
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button variant="ghost" size="icon" className="md:hidden text-slate-400 hover:bg-white/5">
+            <MdMenu size={22} />
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="w-[220px] p-0 bg-[#1a1a2e] border-none">
+          <SidebarContent user={user} navItems={navItems} collapsed={false} onLogout={onLogout} />
+        </SheetContent>
+      </Sheet>
 
-    {/* Bell */}
-    <Button variant="ghost" size="icon" className="relative">
-      <Bell className="h-5 w-5" />
-      {notifications > 0 && (
-        <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary" />
-      )}
-    </Button>
+      <h1 className="text-[15px] font-bold text-white capitalize leading-none pt-0.5">
+        {displayTitle}
+      </h1>
 
-    {/* Avatar shortcut on mobile */}
-    <Avatar className="h-8 w-8 md:hidden">
-      <AvatarImage src={user?.avatar} />
-      <AvatarFallback className="text-xs bg-primary text-primary-foreground font-semibold">
-        {user?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U'}
-      </AvatarFallback>
-    </Avatar>
+      <div className="flex-1" />
 
-  </header>
-);
+      <div className="flex items-center gap-2">
+        {/* Topbar Actions */}
+        <div className="flex items-center justify-center w-[32px] h-[32px] bg-white/5 border border-white/5 rounded-lg cursor-pointer hover:bg-white/10 transition-colors">
+          <MdSearch size={17} className="text-slate-400" />
+        </div>
+
+        <div className="relative flex items-center justify-center w-[32px] h-[32px] bg-white/5 border border-white/5 rounded-lg cursor-pointer hover:bg-white/10 transition-colors">
+          <MdNotifications size={17} className="text-slate-400" />
+          <span className="absolute top-[6px] right-[6px] w-[7px] h-[7px] bg-[#ef4444] rounded-full border-[1.5px] border-[#0a0a0a]" />
+        </div>
+
+        <div className="w-[32px] h-[32px] bg-[#f97316] rounded-full flex items-center justify-center text-[11px] font-bold text-white uppercase cursor-pointer hover:scale-105 transition-transform">
+          {user?.name?.charAt(0) || 'U'}
+        </div>
+      </div>
+
+    </header>
+  );
+};
 
 /* ─────────────────────────────────────────
    Main layout
@@ -284,22 +295,17 @@ const DashboardLayout = () => {
     navigate('/login');
   };
 
-  const navItems = user?.role === 'freelancer' ? freelancerNav : customerNav;
-  const sidebarW = collapsed ? 'w-[60px]' : 'w-60';
+  const navItems = user?.role === 'freelancer' ? [] : []; // We use navGroups now
+  const sidebarW = collapsed ? 'w-[68px]' : 'w-[220px]';
 
   if (!user) return null;
 
   return (
-    <div className="flex min-h-screen bg-muted/30">
+    <div className="flex h-screen overflow-hidden bg-[#050505] font-sans text-slate-300">
 
-      {/* ── Desktop Sidebar ── */}
-      <aside
-        className={`
-          hidden md:flex flex-col fixed inset-y-0 left-0 z-30
-          border-r bg-background
-          transition-all duration-200 ease-in-out
-          ${sidebarW}
-        `}
+      {/* Desktop Sidebar */}
+      <aside 
+        className={`hidden md:flex flex-col flex-shrink-0 z-30 bg-[#0a0a0a] transition-all duration-300 ease-in-out ${sidebarW}`}
       >
         <SidebarContent
           user={user}
@@ -311,35 +317,26 @@ const DashboardLayout = () => {
         {/* Collapse toggle */}
         <button
           onClick={() => setCollapsed(c => !c)}
-          className="absolute -right-3 top-20 z-10 h-6 w-6 rounded-full border bg-background shadow-sm flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+          className="absolute -right-3 top-20 z-10 h-6 w-6 rounded-full bg-[#1a1a2e] border border-white/10 shadow-lg flex items-center justify-center text-white/40 hover:text-white transition-colors"
           aria-label="Toggle sidebar"
         >
           {collapsed
-            ? <PanelLeftOpen  className="h-3 w-3" />
-            : <PanelLeftClose className="h-3 w-3" />
+            ? <MdKeyboardArrowRight size={14} />
+            : <MdKeyboardArrowLeft  size={14} />
           }
         </button>
       </aside>
 
-      {/* ── Main area ── */}
-      <div
-        className={`
-          flex flex-col flex-1 min-h-screen
-          transition-all duration-200 ease-in-out
-          ${collapsed ? 'md:ml-[60px]' : 'md:ml-60'}
-        `}
-      >
-        {/* Top bar — visible on all sizes for bell/mobile menu */}
+      {/* Main area */}
+      <div className="flex flex-col flex-1 min-h-screen overflow-hidden">
         <TopBar
           user={user}
           navItems={navItems}
           onLogout={handleLogout}
           notifications={4}
         />
-
-        {/* Page content */}
         <main className="flex-1 overflow-y-auto">
-          <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 md:py-8 space-y-6 pb-20">
+          <div className="max-w-[1400px] mx-auto px-4 md:px-6 py-6 space-y-6 pb-24">
             <Outlet />
           </div>
         </main>
