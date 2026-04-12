@@ -1,23 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import api from '../utils/api';
-import { LogIn, Mail, Lock, ArrowRight, ShieldCheck } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  FaEnvelope, 
+  FaLock, 
+  FaArrowRight, 
+  FaShieldAlt, 
+  FaFingerprint,
+  FaArrowLeft
+} from 'react-icons/fa';
 
 // shadcn/ui
 import { Button }   from '@/components/ui/Button';
 import { Input }    from '@/components/ui/Input';
 import { Label }    from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/Card';
-import { Separator } from '@/components/ui/separator';
 
 const Login = () => {
   const { login, user, isAuthenticated } = useAuth();
@@ -63,115 +61,134 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-purple-50 px-4 pt-24 pb-12">
-      <Card className="w-full max-w-sm shadow-lg border border-purple-100">
+    <div className="min-h-screen bg-[#050505] flex items-center justify-center px-6 pt-24 relative overflow-hidden font-sans selection:bg-orange-500 selection:text-black">
+      
+      {/* Dynamic Background Elements */}
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
+      <div className="absolute -top-[20%] -left-[10%] w-[60%] h-[60%] bg-orange-500/10 blur-[180px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-orange-600/5 blur-[150px] rounded-full pointer-events-none" />
 
-        {/* Header */}
-        <CardHeader className="text-center space-y-3 pt-7 pb-5">
-          <div className="mx-auto w-11 h-11 bg-purple-600 text-white rounded-xl flex items-center justify-center shadow-md">
-            <LogIn className="h-5 w-5" />
-          </div>
-          <div>
-            <CardTitle className="text-xl font-bold text-slate-900">Welcome Back</CardTitle>
-            <CardDescription className="text-sm text-slate-500 mt-1">
-              Sign in to your account
-            </CardDescription>
-          </div>
-        </CardHeader>
+      <motion.div 
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
+        className="w-full max-w-sm relative z-10"
+      >
+        <div className="bg-zinc-900/40 backdrop-blur-3xl p-6 rounded-[40px] border-b border-white/10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.6)]">
+          
+          {/* Back to Home */}
+          <Link to="/" className="inline-flex items-center gap-2 text-[8px] font-black uppercase tracking-[0.3em] text-white/40 hover:text-orange-500 transition-colors mb-6 group">
+            <FaArrowLeft className="group-hover:-translate-x-1 transition-transform" />
+            Home
+          </Link>
 
-        {/* Form */}
-        <CardContent className="space-y-4 px-6">
-          {error && (
-            <Alert variant="destructive" className="py-2 px-3 text-xs">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
+          {/* Header */}
+          <div className="mb-6 space-y-3">
+            <div className="w-12 h-12 bg-orange-500 rounded-[18px] flex items-center justify-center shadow-2xl shadow-orange-500/20 mb-4 relative group overflow-hidden">
+               <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
+               <FaFingerprint size={20} className="text-black relative z-10" />
+            </div>
+            <h1 className="text-2xl font-black text-white tracking-tighter uppercase leading-none">
+              Welcome<br /><span className="text-orange-500">Back</span>
+            </h1>
+            <p className="text-[8px] font-black text-white/50 uppercase tracking-[0.3em]">
+              Access your portal
+            </p>
+          </div>
+
+          {/* Error Message */}
+          <AnimatePresence>
+            {error && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                animate={{ opacity: 1, height: 'auto', marginBottom: 16 }}
+                exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="bg-orange-500/10 p-2.5 rounded-lg flex items-center gap-2 border border-orange-500/20">
+                  <div className="w-1 h-1 bg-orange-500 rounded-full animate-pulse" />
+                  <p className="text-[8px] font-black text-orange-500 uppercase tracking-widest leading-tight">{error}</p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email */}
+            
+            {/* Email Field */}
             <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-xs font-semibold text-slate-600">
-                Email Address
-              </Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Label className="text-[8px] font-black text-white/60 uppercase tracking-[0.3em] ml-1">Email</Label>
+              <div className="relative group">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-orange-500 transition-colors">
+                  <FaEnvelope size={10} />
+                </div>
                 <Input
-                  id="email"
                   type="email"
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  placeholder="name@example.com"
-                  className="pl-9 h-10 border-purple-100 focus-visible:ring-purple-500 focus-visible:border-purple-400"
+                  placeholder="name@nexus.com"
+                  className="h-12 pl-12 bg-white/5 border-none rounded-xl focus-visible:ring-1 focus-visible:ring-orange-500/30 text-xs font-bold text-white placeholder:text-white/10 transition-all font-mono"
                   required
                 />
               </div>
             </div>
 
-            {/* Password */}
+            {/* Password Field */}
             <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="text-xs font-semibold text-slate-600">
-                  Password
-                </Label>
-                <Link
-                  to="#"
-                  className="text-[11px] text-purple-600 font-medium hover:text-purple-800 transition-colors"
-                >
-                  Forgot password?
-                </Link>
+              <div className="flex items-center justify-between ml-1">
+                <Label className="text-[8px] font-black text-white/60 uppercase tracking-[0.3em]">Password</Label>
+                <Link to="#" className="text-[7px] font-black text-white/40 hover:text-orange-500 uppercase tracking-widest transition-colors tracking-tighter">Recover</Link>
               </div>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <div className="relative group">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-orange-500 transition-colors">
+                  <FaLock size={10} />
+                </div>
                 <Input
-                  id="password"
                   type="password"
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
                   placeholder="••••••••"
-                  className="pl-9 h-10 border-purple-100 focus-visible:ring-purple-500 focus-visible:border-purple-400"
+                  className="h-12 pl-12 bg-white/5 border-none rounded-xl focus-visible:ring-1 focus-visible:ring-orange-500/30 text-xs font-bold text-white placeholder:text-white/10 transition-all font-mono"
                   required
                 />
               </div>
             </div>
 
-            {/* Submit */}
-            <Button
-              type="submit"
+            {/* Submit Button */}
+            <Button 
+              type="submit" 
               disabled={loading}
-              className="w-full h-10 bg-purple-600 hover:bg-purple-700 text-white font-semibold text-sm mt-1"
+              className="w-full h-12 bg-white hover:bg-orange-500 text-black font-black uppercase text-[9px] tracking-[0.4em] rounded-[18px] transition-all duration-500 shadow-xl hover:shadow-orange-500/10 active:scale-95 disabled:opacity-50 mt-2 group"
             >
-              {loading ? 'Signing in…' : 'Sign In'}
+              <span className="flex items-center gap-2">
+                {loading ? 'WAITING...' : 'AUTHORIZE'}
+                <FaArrowRight className="group-hover:translate-x-0.5 transition-transform" size={8} />
+              </span>
             </Button>
           </form>
-        </CardContent>
 
-        {/* Footer */}
-        <CardFooter className="flex flex-col gap-4 px-6 pb-7 pt-2">
-          <div className="flex items-center gap-3 w-full">
-            <Separator className="flex-1" />
-            <span className="text-[10px] text-slate-400 uppercase tracking-widest">or</span>
-            <Separator className="flex-1" />
+          {/* Footer */}
+          <div className="mt-8 text-center space-y-4">
+            <div className="relative flex justify-center uppercase">
+              <span className="text-[7px] font-black text-white/30 tracking-[0.6em]">Encrypted Network</span>
+            </div>
+
+            <p className="text-[9px] font-bold text-white/50">
+              New identity?{' '}
+              <Link to="/register" className="text-white hover:text-orange-500 font-black uppercase tracking-widest transition-colors ml-1">
+                Register
+              </Link>
+            </p>
+
+            <div className="flex items-center justify-center gap-2 text-white/20 pt-1">
+              <FaShieldAlt size={7} />
+              <span className="text-[6px] font-black uppercase tracking-[0.4em]">System Secured</span>
+            </div>
           </div>
-
-          <p className="text-sm text-slate-500 text-center">
-            Don't have an account?{' '}
-            <Link
-              to="/register"
-              className="text-purple-600 font-semibold hover:text-purple-800 inline-flex items-center gap-0.5 transition-colors"
-            >
-              Create one <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </p>
-
-          <div className="flex items-center justify-center gap-1.5 text-slate-400">
-            <ShieldCheck className="h-3.5 w-3.5" />
-            <span className="text-[10px] font-medium">End-to-end encrypted</span>
-          </div>
-        </CardFooter>
-
-      </Card>
+        </div>
+      </motion.div>
     </div>
   );
 };
