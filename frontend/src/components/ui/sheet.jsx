@@ -1,5 +1,6 @@
 import React, { useState, createContext, useContext, useEffect } from "react";
 import { X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../../utils/cn";
 
 const SheetContext = createContext();
@@ -32,7 +33,7 @@ export const SheetTrigger = ({ asChild, children, className }) => {
   );
 };
 
-export const SheetContent = ({ className, children, side = "right" }) => {
+export const SheetContent = ({ className, children, side = "right", hideClose = false }) => {
   const { open, setOpen } = useContext(SheetContext);
 
   useEffect(() => {
@@ -46,38 +47,90 @@ export const SheetContent = ({ className, children, side = "right" }) => {
     };
   }, [open]);
 
-  if (!open) return null;
+  const getAnimationProps = () => {
+    switch (side) {
+      case "top":
+        return {
+          initial: { y: "-100%" },
+          animate: { y: 0 },
+          exit: { y: "-100%" },
+          transition: { type: "spring", damping: 25, stiffness: 200 }
+        };
+      case "bottom":
+        return {
+          initial: { y: "100%" },
+          animate: { y: 0 },
+          exit: { y: "100%" },
+          transition: { type: "spring", damping: 25, stiffness: 200 }
+        };
+      case "left":
+        return {
+          initial: { x: "-100%" },
+          animate: { x: 0 },
+          exit: { x: "-100%" },
+          transition: { type: "tween", duration: 0.3 }
+        };
+      case "right":
+      default:
+        return {
+          initial: { x: "100%" },
+          animate: { x: 0 },
+          exit: { x: "100%" },
+          transition: { type: "tween", duration: 0.3 }
+        };
+    }
+  };
 
-  const sideClass = side === "right" 
-    ? "inset-y-0 right-0 border-l border-border" 
-    : "inset-y-0 left-0 border-r border-border";
+  const getSideClasses = () => {
+    switch (side) {
+      case "top":
+        return "inset-x-0 top-0 h-fit border-b border-border";
+      case "bottom":
+        return "inset-x-0 bottom-0 h-fit border-t border-border";
+      case "left":
+        return "inset-y-0 left-0 w-[85%] sm:max-w-sm border-r border-border";
+      case "right":
+      default:
+        return "inset-y-0 right-0 w-[85%] sm:max-w-sm border-l border-border";
+    }
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex">
-      {/* Backdrop */}
-      <div 
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" 
-        onClick={() => setOpen(false)}
-      />
-      
-      {/* Drawer */}
-      <div 
-        className={cn(
-          "fixed z-50 h-full w-[85%] sm:max-w-sm bg-background p-6 shadow-2xl transition-transform transform duration-300 flex flex-col overflow-y-auto",
-          sideClass,
-          className
-        )}
-      >
-        <button 
-          onClick={() => setOpen(false)} 
-          className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100"
-        >
-          <X className="h-5 w-5" />
-          <span className="sr-only">Close</span>
-        </button>
-        {children}
-      </div>
-    </div>
+    <AnimatePresence>
+      {open && (
+        <div className="fixed inset-0 z-[100] flex">
+          {/* Backdrop */}
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm" 
+            onClick={() => setOpen(false)}
+          />
+          
+          {/* Drawer */}
+          <motion.div 
+            {...getAnimationProps()}
+            className={cn(
+              "fixed z-[101] bg-background shadow-2xl flex flex-col overflow-hidden",
+              getSideClasses(),
+              className
+            )}
+          >
+            {!hideClose && (
+              <button 
+                onClick={() => setOpen(false)} 
+                className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 p-2"
+              >
+                <X className="h-5 w-5" />
+                <span className="sr-only">Close</span>
+              </button>
+            )}
+            {children}
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
   );
 };
 

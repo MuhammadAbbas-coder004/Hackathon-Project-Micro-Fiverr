@@ -3,21 +3,31 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { cn } from '../utils/cn';
 
-import { Button } from '@/components/ui/Button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/Badge';
-import { Separator } from '@/components/ui/separator';
+// Shadcn UI Components
+import { Button } from '../components/ui/Button';
+import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from '../components/ui/dropdown-menu';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
   SheetTrigger, SheetClose,
-} from '@/components/ui/sheet';
-import {
-  Sparkles, Menu, LogOut, MessageSquare, LayoutDashboard,
-  Home, ShoppingBag, Radio, ChevronDown, User,
+} from '../components/ui/sheet';
+
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Home, 
+  ShoppingBag, 
+  Radio, 
+  Menu, 
+  X,
+  User,
+  LayoutGrid,
+  MessageSquare,
+  LogOut,
+  ChevronDown,
+  Zap,
 } from 'lucide-react';
 
 const navLinks = [
@@ -31,17 +41,20 @@ const Logo = () => {
   const isFreelancer = user?.role === 'freelancer';
 
   return (
-    <Link to={isFreelancer ? "/dashboard/provider" : "/"} className="flex items-center gap-3 group">
-      <div className="relative w-9 h-9 flex items-center justify-center">
-        <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 shadow-lg shadow-indigo-200 group-hover:shadow-indigo-300 transition-all duration-300" />
-        <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-indigo-400 to-violet-500 opacity-0 group-hover:opacity-100 scale-110 transition-all duration-300" />
-        <Sparkles className="relative h-4 w-4 text-white group-hover:rotate-12 transition-transform duration-300" />
+    <Link to={isFreelancer ? "/dashboard/provider" : "/"} className="flex items-center gap-2 group outline-none">
+      <div className="relative w-8 h-8 flex items-center justify-center">
+        <motion.div 
+          animate={{ rotate: [0, 10, 0] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute inset-0 bg-orange-500 rounded-lg blur-[2px] opacity-10 group-hover:opacity-30 transition-opacity" 
+        />
+        <Zap className="relative h-6 w-6 text-orange-500 fill-orange-500/20 group-hover:scale-110 transition-transform duration-300" />
       </div>
       <div className="flex flex-col leading-none">
-        <span className="text-base font-black tracking-tight italic bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">
-          Micro Fiverr.
+        <span className="text-xl font-extrabold tracking-tight text-white">
+          MICRO<span className="text-orange-500 font-black">FIVERR</span>
         </span>
-        <span className="text-[9px] font-bold text-indigo-400 uppercase tracking-[0.25em]">Elite Marketplace</span>
+        <span className="text-[7px] font-bold text-zinc-500 uppercase tracking-[0.3em] mt-0.5">Elite Freelance Network</span>
       </div>
     </Link>
   );
@@ -59,276 +72,213 @@ const Navbar = () => {
     : 'U';
 
   return (
-    <nav className="fixed top-0 inset-x-0 z-50 bg-white/80 backdrop-blur-xl border-b border-indigo-100/60 shadow-[0_2px_20px_rgba(99,102,241,0.08)]">
-      <div className="max-w-7xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between gap-4">
+    <nav className="fixed top-0 inset-x-0 z-50 bg-black/60 backdrop-blur-2xl transition-all duration-300">
+      <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between relative">
 
         {/* ══ LEFT: Logo ══ */}
         <Logo />
 
-        {/* ══ CENTER: Nav Links ══ */}
-        <div className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2">
+        {/* ══ CENTER: Desktop Nav ══ */}
+        <div className="hidden md:flex items-center gap-8">
           {user?.role !== 'freelancer' && navLinks.map(({ href, label, icon: Icon }) => (
             <Link
               key={href}
               to={href}
               className={cn(
-                'relative flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all duration-200 group',
-                location.pathname === href
-                  ? 'text-indigo-600 bg-indigo-50'
-                  : 'text-slate-500 hover:text-indigo-600 hover:bg-indigo-50/70'
+                'relative flex items-center gap-2 py-2 text-[11px] font-bold uppercase tracking-[0.2em] transition-colors group',
+                location.pathname === href ? 'text-white' : 'text-white/40 hover:text-white'
               )}
             >
-              <Icon className={cn(
-                'h-3.5 w-3.5 transition-transform duration-200 group-hover:scale-110',
-                location.pathname === href ? 'text-indigo-500' : 'text-slate-400 group-hover:text-indigo-400'
-              )} />
+              <Icon size={14} className={cn("transition-transform group-hover:-translate-y-0.5", location.pathname === href ? "text-orange-500" : "")} />
               {label}
+              
+              {/* Animated Underline */}
               {location.pathname === href && (
-                <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-indigo-500" />
+                <motion.div 
+                  layoutId="nav-underline"
+                  className="absolute -bottom-[26px] left-0 right-0 h-[2px] bg-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.5)]"
+                  initial={false}
+                  transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                />
               )}
+
+              {/* Hover Underline (Subtle) */}
+              <div className="absolute -bottom-[26px] left-0 right-0 h-[2px] bg-white/10 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center" />
             </Link>
           ))}
         </div>
 
-        {/* ══ RIGHT: Buttons + user stuff ══ */}
-        <div className="hidden md:flex items-center gap-2">
-
-          {/* Guest State: Login / Sign Up */}
+        {/* ══ RIGHT: Actions ══ */}
+        <div className="flex items-center gap-4">
+          
           {!isAuthenticated ? (
-            <>
+            <div className="hidden md:flex items-center gap-1">
               <Button
                 variant="ghost"
-                size="sm"
                 asChild
-                className="h-9 px-5 rounded-xl font-bold text-[11px] uppercase tracking-widest
-                           text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700
-                           border border-indigo-200 hover:border-indigo-300 transition-all duration-200"
+                className="h-9 px-5 rounded-xl font-bold text-[10px] uppercase tracking-widest text-white/50 hover:text-white hover:bg-white/5 transition-all"
               >
-                <Link to="/login">Login</Link>
+                <Link to="/login">Sign In</Link>
               </Button>
-
               <Button
-                size="sm"
                 asChild
-                className="h-9 px-5 rounded-xl font-bold text-[11px] uppercase tracking-widest
-                           bg-gradient-to-r from-indigo-600 to-violet-600
-                           hover:from-indigo-500 hover:to-violet-500
-                           text-white shadow-md shadow-indigo-200
-                           hover:shadow-lg hover:shadow-indigo-300
-                           transition-all duration-200 border-0"
+                className="h-9 px-6 rounded-xl font-bold text-[10px] uppercase tracking-widest bg-orange-500 hover:bg-orange-600 text-black shadow-lg shadow-orange-500/10 border-none transition-all hover:scale-105 active:scale-95"
               >
-                <Link to="/register">Sign Up</Link>
+                <Link to="/register">Join Network</Link>
               </Button>
-            </>
+            </div>
           ) : (
-            /* Logged In State */
-            <>
-              <div className="w-px h-6 bg-indigo-100 mx-1" />
-
-              <Button
-                variant="ghost"
-                size="icon"
-                asChild
-                className="rounded-xl h-9 w-9 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition-all duration-200 relative"
-              >
-                <Link to="/chat">
-                  <MessageSquare className="h-4 w-4" />
-                  <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                </Link>
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="icon"
-                asChild
-                className="rounded-xl h-9 w-9 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition-all duration-200"
-              >
-                <Link to="/dashboard"><LayoutDashboard className="h-4 w-4" /></Link>
-              </Button>
-
+            <div className="flex items-center gap-3">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className="flex items-center gap-2 rounded-xl px-2 h-9
-                               hover:bg-indigo-50 transition-all duration-200
-                               border border-transparent hover:border-indigo-200"
-                  >
-                    <Avatar className="h-7 w-7 ring-2 ring-indigo-200 ring-offset-1">
-                      <AvatarFallback className="text-[11px] font-black bg-gradient-to-br from-indigo-500 to-violet-600 text-white">
+                  <button className="flex items-center gap-2 rounded-full p-0.5 pr-3 hover:bg-white/5 transition-all outline-none border border-white/5 group">
+                    <Avatar className="h-8 w-8 border border-white/10 bg-zinc-900 group-hover:border-orange-500/50 transition-colors">
+                      <AvatarFallback className="bg-zinc-800 text-white font-bold text-[10px]">
                         {initials}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="text-left hidden md:flex flex-col justify-center">
-                      <p className="text-xs font-black leading-none text-slate-800 truncate max-w-[100px]">{user?.name || 'User'}</p>
-                      <p className="text-[9px] font-bold text-indigo-400 uppercase tracking-tighter mt-0.5">{user?.role || 'Member'}</p>
-                    </div>
-                    <ChevronDown className="h-3 w-3 text-slate-400" />
-                  </Button>
+                    <ChevronDown size={14} className="text-white/30 group-hover:text-white transition-colors" />
+                  </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="end"
-                  className="w-56 p-2 rounded-2xl shadow-2xl shadow-indigo-100/50 border border-indigo-100/60 bg-white/95 backdrop-blur-xl"
+                  className="w-64 mt-4 p-3 rounded-[24px] bg-black/90 border border-white/10 shadow-3xl text-white backdrop-blur-2xl"
                 >
-                  <DropdownMenuLabel className="font-normal px-3 py-3 bg-gradient-to-br from-indigo-50 to-violet-50 rounded-xl mb-1">
-                    <p className="font-black text-sm text-slate-900">{user?.name}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Badge className="px-2 py-0 text-[10px] font-black uppercase bg-indigo-100 text-indigo-700 border-none">
-                        {user?.role || 'Member'}
-                      </Badge>
-                      <p className="text-[10px] text-slate-400 truncate">{user?.email}</p>
+                  <DropdownMenuLabel className="px-4 py-4 mb-2 bg-white/5 rounded-2xl flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-orange-500 flex items-center justify-center text-black font-black text-xs shadow-lg shadow-orange-500/20">
+                      {initials}
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold truncate">{user?.name}</p>
+                      <p className="text-[9px] text-white/40 font-bold uppercase tracking-widest mt-0.5">{user?.role}</p>
                     </div>
                   </DropdownMenuLabel>
-                  <DropdownMenuSeparator className="my-1 bg-indigo-50" />
-                  <DropdownMenuItem asChild className="rounded-xl focus:bg-indigo-50 focus:text-indigo-600 cursor-pointer text-slate-600 hover:text-indigo-600">
+                  <DropdownMenuItem asChild className="rounded-xl focus:bg-white/10 focus:text-white cursor-pointer font-medium py-3 px-4 mb-1 transition-all">
                     <Link to="/dashboard" className="flex items-center gap-3">
-                      <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center">
-                        <LayoutDashboard className="h-3.5 w-3.5 text-indigo-500" />
-                      </div>
-                      Dashboard
+                      <LayoutGrid size={16} className="text-orange-500" /> Dashboard
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild className="rounded-xl focus:bg-indigo-50 focus:text-indigo-600 cursor-pointer text-slate-600 hover:text-indigo-600">
+                  <DropdownMenuItem asChild className="rounded-xl focus:bg-white/10 focus:text-white cursor-pointer font-medium py-3 px-4 mb-1 transition-all">
                     <Link to="/chat" className="flex items-center gap-3">
-                      <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center">
-                        <MessageSquare className="h-3.5 w-3.5 text-indigo-500" />
-                      </div>
-                      Messages
+                      <MessageSquare size={16} className="text-orange-500" /> Messages
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild className="rounded-xl focus:bg-indigo-50 focus:text-indigo-600 cursor-pointer text-slate-600 hover:text-indigo-600">
-                    <Link to="/profile" className="flex items-center gap-3">
-                      <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center">
-                        <User className="h-3.5 w-3.5 text-indigo-500" />
-                      </div>
-                      Account Settings
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator className="my-1 bg-red-50" />
+                  <DropdownMenuSeparator className="bg-white/10 mx-2 my-2" />
                   <DropdownMenuItem
                     onClick={handleLogout}
-                    className="rounded-xl text-red-500 focus:bg-red-50 focus:text-red-600 font-bold cursor-pointer"
+                    className="rounded-xl text-red-400 focus:bg-red-500/10 focus:text-red-400 font-bold cursor-pointer py-3 px-4 transition-all"
                   >
-                    <div className="w-7 h-7 rounded-lg bg-red-50 flex items-center justify-center mr-3">
-                      <LogOut className="h-3.5 w-3.5 text-red-400" />
-                    </div>
-                    Sign Out
+                    <LogOut size={16} className="mr-3" /> Sign Out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            </>
-          )}
-        </div>
-
-        {/* ══ MOBILE: Hamburger ══ */}
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden rounded-xl hover:bg-indigo-50 hover:text-indigo-600 transition-all duration-200"
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="right" className="w-72 p-0 flex flex-col bg-white/95 backdrop-blur-xl">
-            <SheetHeader className="px-6 py-5 border-b border-indigo-100/60 bg-gradient-to-br from-indigo-50/50 to-violet-50/30">
-              <SheetTitle asChild><Logo /></SheetTitle>
-            </SheetHeader>
-
-            <nav className="flex flex-col gap-1 px-4 py-4">
-              {user?.role !== 'freelancer' && navLinks.map(({ href, label, icon: Icon }) => (
-                <SheetClose asChild key={href}>
-                  <Link
-                    to={href}
-                    className={cn(
-                      'flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200',
-                      location.pathname === href
-                        ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-md shadow-indigo-200'
-                        : 'text-slate-500 hover:text-indigo-600 hover:bg-indigo-50'
-                    )}
-                  >
-                    <Icon className="h-4 w-4" />{label}
-                  </Link>
-                </SheetClose>
-              ))}
-            </nav>
-
-            <Separator className="bg-indigo-100/60" />
-
-            <div className="px-4 py-4 mt-auto space-y-3">
-              {!isAuthenticated && (
-                <>
-                  <SheetClose asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full h-10 rounded-xl font-bold border border-indigo-200 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-300 transition-all duration-200"
-                      asChild
-                    >
-                      <Link to="/login">Login</Link>
-                    </Button>
-                  </SheetClose>
-                  <SheetClose asChild>
-                    <Button
-                      className="w-full h-10 rounded-xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-md shadow-indigo-200 border-0 transition-all duration-200"
-                      asChild
-                    >
-                      <Link to="/register">Sign Up</Link>
-                    </Button>
-                  </SheetClose>
-                </>
-              )}
-
-              {isAuthenticated && (
-                <>
-                  <Separator className="bg-indigo-100/60" />
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-br from-indigo-50 to-violet-50 border border-indigo-100">
-                    <Avatar className="h-10 w-10 ring-2 ring-indigo-200 ring-offset-1">
-                      <AvatarFallback className="font-black bg-gradient-to-br from-indigo-500 to-violet-600 text-white">
-                        {initials}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-sm truncate text-slate-800">{user?.name}</p>
-                      <Badge className="text-[10px] capitalize bg-indigo-100 text-indigo-700 border-none">{user?.role}</Badge>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <SheetClose asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="rounded-xl font-semibold border-indigo-100 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 transition-all duration-200"
-                        asChild
-                      >
-                        <Link to="/dashboard"><LayoutDashboard className="mr-1.5 h-3.5 w-3.5" />Dashboard</Link>
-                      </Button>
-                    </SheetClose>
-                    <SheetClose asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="rounded-xl font-semibold border-indigo-100 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 transition-all duration-200"
-                        asChild
-                      >
-                        <Link to="/chat"><MessageSquare className="mr-1.5 h-3.5 w-3.5" />Messages</Link>
-                      </Button>
-                    </SheetClose>
-                  </div>
-                  <SheetClose asChild>
-                    <Button
-                      className="w-full rounded-xl font-bold bg-red-50 text-red-500 hover:bg-red-100 border border-red-100 hover:border-red-200 shadow-none transition-all duration-200"
-                      onClick={handleLogout}
-                    >
-                      <LogOut className="mr-2 h-4 w-4" />Sign Out
-                    </Button>
-                  </SheetClose>
-                </>
-              )}
             </div>
-          </SheetContent>
-        </Sheet>
+          )}
 
+          {/* ══ MOBILE: FULL SHUTTER DROP ══ */}
+          <div className="md:hidden">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-xl w-10 h-10 text-white/70 hover:text-white hover:bg-white/5 active:scale-90 transition-all">
+                  <Menu size={24} />
+                </Button>
+              </SheetTrigger>
+              
+              <SheetContent side="top" hideClose className="h-auto w-full bg-black/95 backdrop-blur-3xl border-b border-white/10 text-white p-0 flex flex-col focus:outline-none rounded-b-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+                
+                {/* Shutter Header */}
+                <div className="h-20 px-8 flex items-center justify-between">
+                  <Logo />
+                  <SheetClose asChild>
+                    <button className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-white hover:bg-orange-500 hover:text-black transition-all active:scale-90">
+                      <X size={24} />
+                    </button>
+                  </SheetClose>
+                </div>
+
+                {/* Shutter Body (Links) */}
+                <div className="flex flex-col justify-start pt-4 px-8 gap-1">
+                  <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                  >
+                    <p className="text-[10px] font-bold uppercase tracking-[0.5em] text-white/20 mb-8 px-4">Navigation</p>
+                    <div className="space-y-2">
+                      {navLinks.map(({ href, label, icon: Icon }, index) => (
+                        <SheetClose asChild key={href}>
+                          <Link
+                            to={href}
+                            className={cn(
+                              'flex items-center justify-between px-6 py-3.5 rounded-2xl transition-all group',
+                              location.pathname === href
+                                ? 'bg-orange-500 text-black'
+                                : 'hover:bg-white/5 text-white/60 hover:text-white'
+                            )}
+                          >
+                            <div className="flex items-center gap-6">
+                              <Icon size={22} className={cn("transition-transform group-hover:scale-110", location.pathname === href ? "text-black" : "text-orange-500")} />
+                              <span className="text-2xl font-bold tracking-tight">{label}</span>
+                            </div>
+                            <Zap size={16} className={cn("opacity-0 group-hover:opacity-100 transition-opacity", location.pathname === href ? "opacity-100" : "")} />
+                          </Link>
+                        </SheetClose>
+                      ))}
+                    </div>
+                  </motion.div>
+                </div>
+
+                {/* Shutter Footer (Account) */}
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="p-8 pt-4 pb-10"
+                >
+                  {!isAuthenticated ? (
+                    <div className="grid grid-cols-2 gap-4">
+                      <SheetClose asChild>
+                        <Button asChild variant="ghost" className="h-11 rounded-xl border border-white/10 text-white font-bold text-[10px] uppercase tracking-widest hover:bg-white/5">
+                          <Link to="/login">Sign In</Link>
+                        </Button>
+                      </SheetClose>
+                      <SheetClose asChild>
+                        <Button asChild className="h-11 rounded-xl bg-orange-500 text-black font-black text-[10px] uppercase tracking-widest hover:bg-orange-600 shadow-xl shadow-orange-500/20 shadow-orange-500/10">
+                          <Link to="/register">Join Network</Link>
+                        </Button>
+                      </SheetClose>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                       <div className="flex items-center gap-4 px-5 py-3 bg-white/5 rounded-2xl border border-white/5">
+                          <div className="w-10 h-10 rounded-xl bg-orange-500 flex items-center justify-center text-black font-black text-xs shadow-lg shadow-orange-500/20">
+                            {initials}
+                          </div>
+                          <div className="flex flex-col">
+                            <p className="font-bold text-lg text-white leading-tight">{user?.name}</p>
+                            <p className="text-[10px] text-white/40 font-bold uppercase tracking-[0.2em] mt-1">{user?.role}</p>
+                          </div>
+                       </div>
+                       <div className="grid grid-cols-2 gap-4">
+                        <SheetClose asChild>
+                          <Button asChild variant="ghost" className="h-11 rounded-xl bg-white/5 text-white/60 hover:text-white font-bold text-[10px] uppercase tracking-widest border border-white/5">
+                            <Link to="/dashboard">Dashboard</Link>
+                          </Button>
+                        </SheetClose>
+                        <Button
+                          onClick={() => { handleLogout(); }}
+                          className="h-11 rounded-xl bg-red-500/10 text-red-500 font-bold text-[10px] uppercase tracking-widest border border-red-500/20 hover:bg-red-500 hover:text-white transition-all"
+                        >
+                          Sign Out
+                        </Button>
+                       </div>
+                    </div>
+                  )}
+                </motion.div>
+              </SheetContent>
+            </Sheet>
+          </div>
+        </div>
       </div>
     </nav>
   );
