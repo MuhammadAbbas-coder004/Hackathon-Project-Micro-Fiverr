@@ -29,14 +29,10 @@ import {
   MdPerson,
   MdHelpOutline,
   MdKeyboardArrowLeft,
-  MdKeyboardArrowRight,
-  MdSearch,
-  MdFormatListBulleted,
-  MdAccessTime,
   MdAddCircleOutline,
   MdTrendingUp,
 } from 'react-icons/md';
-import { Zap } from 'lucide-react';
+import { Zap, PanelLeft, PanelLeftClose } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const navGroups = {
@@ -142,7 +138,7 @@ const NavItem = ({ item, collapsed }) => {
 /* ─────────────────────────────────────────
    Sidebar content
 ───────────────────────────────────────── */
-const SidebarContent = ({ user, navItems, collapsed, onLogout }) => {
+const SidebarContent = ({ user, navItems, collapsed, onLogout, onToggle }) => {
   const isFreelancer = user?.role === 'freelancer';
   const initials = user?.name
     ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
@@ -152,22 +148,35 @@ const SidebarContent = ({ user, navItems, collapsed, onLogout }) => {
     <div className="flex flex-col h-full">
 
       {/* Official Website Logo Section */}
-      <div className={`p-6 flex items-center gap-3 ${collapsed ? 'justify-center px-2' : ''}`}>
-        <div className="relative w-8 h-8 flex items-center justify-center shrink-0">
-          <motion.div 
-            animate={{ rotate: [0, 10, 0] }}
-            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute inset-0 bg-orange-500 rounded-lg blur-[2px] opacity-20" 
-          />
-          <Zap className="relative h-6 w-6 text-orange-500 fill-orange-500/20" />
-        </div>
-        {!collapsed && (
-          <div className="flex flex-col leading-none">
-            <span className="text-[15px] font-black tracking-tighter text-white uppercase">
-              Micro<span className="text-[#f97316]">Fiverr</span>
-            </span>
-            <span className="text-[6px] font-bold text-white/20 uppercase tracking-[0.2em] mt-0.5">Nexus_Network</span>
+      <div className={`p-6 pb-2 flex items-center justify-between gap-3 ${collapsed ? 'justify-center px-2' : ''}`}>
+        <div className="flex items-center gap-3 overflow-hidden">
+          <div className="relative w-8 h-8 flex items-center justify-center shrink-0">
+            <motion.div 
+              animate={{ rotate: [0, 10, 0] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute inset-0 bg-orange-500 rounded-lg blur-[2px] opacity-20" 
+            />
+            <Zap className="relative h-6 w-6 text-orange-500 fill-orange-500/20" />
           </div>
+          {!collapsed && (
+            <div className="flex flex-col leading-none">
+              <span className="text-[15px] font-black tracking-tighter text-white uppercase">
+                Micro<span className="text-[#f97316]">Fiverr</span>
+              </span>
+              <span className="text-[6px] font-bold text-white/20 uppercase tracking-[0.2em] mt-0.5">Nexus_Network</span>
+            </div>
+          )}
+        </div>
+
+        {/* Sidebar Internal Toggle */}
+        {!collapsed && (
+          <button
+            onClick={onToggle}
+            className="p-1.5 text-zinc-500 hover:text-white hover:bg-white/5 rounded-lg transition-all"
+            title="Close sidebar"
+          >
+            <PanelLeftClose size={18} />
+          </button>
         )}
       </div>
 
@@ -232,25 +241,38 @@ const SidebarContent = ({ user, navItems, collapsed, onLogout }) => {
 /* ─────────────────────────────────────────
    Top bar
 ───────────────────────────────────────── */
-const TopBar = ({ user, navItems, onLogout, notifications }) => {
+const TopBar = ({ user, navItems, onLogout, notifications, collapsed, setCollapsed }) => {
   const isFreelancer = user?.role === 'freelancer';
   const displayTitle = location.pathname.split('/').pop()?.replace('-', ' ') || 'Overview';
 
   return (
-    <header className="h-[64px] bg-[#0a0a0a] flex items-center px-6 gap-4 sticky top-0 z-40">
+    <header className="h-[64px] bg-[#0a0a0a] flex items-center px-6 gap-6 sticky top-0 z-40 border-b border-white/5">
 
-      <Sheet>
-        <SheetTrigger asChild>
-          <Button variant="ghost" size="icon" className="md:hidden text-slate-400 hover:bg-white/5">
-            <MdMenu size={22} />
-          </Button>
-        </SheetTrigger>
-        <SheetContent side="left" className="w-[220px] p-0 bg-[#1a1a2e] border-none">
-          <SidebarContent user={user} navItems={navItems} collapsed={false} onLogout={onLogout} />
-        </SheetContent>
-      </Sheet>
+      <div className="flex items-center gap-4">
+        {/* ChatGPT Style Sidebar Toggle (Visible when collapsed) */}
+        {collapsed && (
+          <button
+            onClick={() => setCollapsed(false)}
+            className="hidden md:flex p-2 text-zinc-400 hover:text-white hover:bg-white/5 rounded-lg transition-all"
+            title="Expand sidebar"
+          >
+            <PanelLeft size={20} />
+          </button>
+        )}
 
-      <h1 className="text-[15px] font-bold text-white capitalize leading-none pt-0.5">
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon" className="md:hidden text-slate-400 hover:bg-white/5">
+              <MdMenu size={22} />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-[220px] p-0 bg-[#1a1a2e] border-none">
+            <SidebarContent user={user} navItems={navItems} collapsed={false} onLogout={onLogout} onToggle={() => {}} />
+          </SheetContent>
+        </Sheet>
+      </div>
+
+      <h1 className="text-[15px] font-bold text-white capitalize leading-none pt-0.5 tracking-tight">
         {displayTitle}
       </h1>
 
@@ -305,26 +327,15 @@ const DashboardLayout = () => {
 
       {/* Desktop Sidebar */}
       <aside 
-        className={`hidden md:flex flex-col flex-shrink-0 z-30 bg-[#0a0a0a] transition-all duration-300 ease-in-out ${sidebarW}`}
+        className={`hidden md:flex flex-col flex-shrink-0 z-30 bg-[#0a0a0a] border-r border-white/5 transition-all duration-300 ease-in-out ${sidebarW}`}
       >
         <SidebarContent
           user={user}
           navItems={navItems}
           collapsed={collapsed}
           onLogout={handleLogout}
+          onToggle={() => setCollapsed(!collapsed)}
         />
-
-        {/* Collapse toggle */}
-        <button
-          onClick={() => setCollapsed(c => !c)}
-          className="absolute -right-3 top-20 z-10 h-6 w-6 rounded-full bg-[#1a1a2e] border border-white/10 shadow-lg flex items-center justify-center text-white/40 hover:text-white transition-colors"
-          aria-label="Toggle sidebar"
-        >
-          {collapsed
-            ? <MdKeyboardArrowRight size={14} />
-            : <MdKeyboardArrowLeft  size={14} />
-          }
-        </button>
       </aside>
 
       {/* Main area */}
@@ -334,6 +345,8 @@ const DashboardLayout = () => {
           navItems={navItems}
           onLogout={handleLogout}
           notifications={4}
+          collapsed={collapsed}
+          setCollapsed={setCollapsed}
         />
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-[1400px] mx-auto px-4 md:px-6 py-6 space-y-6 pb-24">

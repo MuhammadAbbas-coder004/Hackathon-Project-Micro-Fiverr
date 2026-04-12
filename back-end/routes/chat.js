@@ -1,7 +1,32 @@
 const express = require("express");
 const router = express.Router();
 const Message = require("../models/message");
+const User = require("../models/user");
 const { protect } = require("../middleware/authMiddleware");
+
+// GET /api/chat/users/search - Search for users to start new chat
+router.get("/users/search", protect, async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q) return res.status(200).json([]);
+
+    const users = await User.find({
+      $and: [
+        { _id: { $ne: req.user._id } }, // Exclude self
+        {
+          $or: [
+            { name: { $regex: q, $options: "i" } },
+            { email: { $regex: q, $options: "i" } }
+          ]
+        }
+      ]
+    }).select("name email avatar isOnline").limit(10);
+
+    res.status(200).json(users);
+  } catch (error) {
+    res.status(500).json({ message: "Error searching users", error: error.message });
+  }
+});
 
 // GET /api/chat/conversations - Get list of conversations
 router.get("/conversations", protect, async (req, res) => {

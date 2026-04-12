@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
 import axios from 'axios';
-import { useLocation } from 'react-router-dom';
+import { useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Button } from '../components/ui/Button';
 import { 
   Send, 
   Search, 
@@ -14,8 +16,17 @@ import {
   Clock,
   User,
   MessageSquare,
-  ArrowLeft
+  ArrowLeft,
+  ShieldCheck,
+  Zap,
+  Activity,
+  Navigation,
+  Plus,
+  Smile,
+  Paperclip,
+  Check
 } from 'lucide-react';
+import { cn } from '../utils/cn';
 
 const ChatPage = () => {
   const { user, token } = useAuth();
@@ -24,136 +35,104 @@ const ChatPage = () => {
   const [conversations, setConversations] = useState([]);
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
   const scrollRef = useRef();
   const [socket, setSocket] = useState(null);
 
-  // Initialize Socket.io
   useEffect(() => {
     const newSocket = io();
     setSocket(newSocket);
 
-    if (user && user._id) {
-      newSocket.emit("join_room", user._id);
+    if (user && user.id) {
+      newSocket.emit("join_room", user.id);
     }
 
     newSocket.on("receive_message", (data) => {
-      setMessages((prev) => [...prev, {
-        id: Date.now(),
-        text: data.text,
-        sender: 'them',
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        isRead: false
-      }]);
-      // If the message is from the active chat, we should mark it read automatically
-      // But for simplicity, the useEffect watching activeChat/messages handles it.
-    });
-
-    newSocket.on("messages_read", ({ readerId }) => {
-      setMessages((prev) => 
-        prev.map(msg => msg.sender === 'me' ? { ...msg, isRead: true } : msg)
-      );
-    });
-
-    return () => {
-      newSocket.disconnect();
-    };
-  }, [user]);
-
-  // Fetch Conversations once
-  useEffect(() => {
-    const fetchConvos = async () => {
-      if(!token) return;
-      try {
-        const res = await axios.get('/api/chat/conversations', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setConversations(res.data);
-        if(res.data.length > 0) {
-          setActiveChat(res.data[0].id);
-        }
-      } catch (err) {
-        console.error("Error fetching conversations", err);
+      fetchConvos();
+      if (activeChat && data.senderId.toString() === activeChat.toString()) {
+        setMessages((prev) => [...prev, {
+          id: Date.now(),
+          text: data.text,
+          sender: 'them',
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          isRead: false
+        }]);
       }
-    };
+    });
+
+    return () => { newSocket.disconnect(); };
+  }, [user, activeChat]);
+
+  const fetchConvos = async () => {
+    if (!token) return;
+    try {
+      const res = await axios.get('/api/chat/conversations', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setConversations(res.data);
+    } catch (err) {
+      console.error("Error fetching conversations", err);
+    }
+  };
+
+  useEffect(() => {
     fetchConvos();
+    const interval = setInterval(fetchConvos, 30000);
+    return () => clearInterval(interval);
   }, [token]);
 
-  // Fetch messages when activeChat changes
+  useEffect(() => {
+    const searchUsers = async () => {
+      if (searchQuery.trim().length < 2) {
+        setSearchResults([]);
+        setIsSearching(false);
+        return;
+      }
+      setIsSearching(true);
+      try {
+        const res = await axios.get(`/api/chat/users/search?q=${searchQuery}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setSearchResults(res.data);
+      } catch (err) {
+        console.error("Search error", err);
+      } finally {
+        setIsSearching(false);
+      }
+    };
+    const timer = setTimeout(searchUsers, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery, token]);
+
   useEffect(() => {
     const fetchMessages = async () => {
-      if(!activeChat || !token) return;
+      if (!activeChat || !token) return;
       try {
         const res = await axios.get(`/api/chat/${activeChat}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        
         const formatted = res.data.map(msg => ({
           id: msg._id,
           text: msg.message,
-          sender: msg.sender === user?._id ? 'me' : 'them',
+          sender: msg.sender.toString() === user?.id?.toString() ? 'me' : 'them',
           time: new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           isRead: msg.isRead
         }));
         setMessages(formatted);
 
-        // Mark as read immediately when opened
-        const hasUnreadFromThem = res.data.some(msg => msg.sender !== user?._id && !msg.isRead);
-        if (hasUnreadFromThem) {
-           await axios.put(`/api/chat/${activeChat}/read`, {}, { headers: { Authorization: `Bearer ${token}` } });
-           if(socket) {
-             socket.emit("mark_read", { senderId: activeChat, readerId: user?._id });
-           }
+        if (res.data.some(msg => msg.sender.toString() !== user?.id?.toString() && !msg.isRead)) {
+          await axios.put(`/api/chat/${activeChat}/read`, {}, { headers: { Authorization: `Bearer ${token}` } });
+          if (socket) socket.emit("mark_read", { senderId: activeChat, readerId: user?.id });
         }
       } catch (err) {
         console.error("Error fetching messages", err);
+        setMessages([]);
       }
     };
     fetchMessages();
   }, [activeChat, token, user]);
-
-  // Handle Intro Message from other pages
-  useEffect(() => {
-    if (location.state?.introProvider && socket && token) {
-      const provider = location.state.introProvider;
-      const text = location.state.introMessage;
-
-      if (window._introSent === provider._id) return;
-      window._introSent = provider._id;
-
-      const sendIntro = async () => {
-        try {
-          const config = { headers: { Authorization: `Bearer ${token}` } };
-          await axios.post('/api/chat', { receiverId: provider._id, message: text }, config);
-          
-          socket.emit("send_message", {
-            senderId: user?._id,
-            receiverId: provider._id,
-            text
-          });
-
-          setConversations(prev => {
-            if (!prev.find(c => c.id === provider._id)) {
-              return [{
-                id: provider._id,
-                name: provider.name || 'User',
-                lastMsg: text,
-                time: 'Just now',
-                unread: 0,
-                online: true
-              }, ...prev];
-            }
-            return prev;
-          });
-          
-          setActiveChat(provider._id);
-        } catch (err) {
-          console.error("Error sending intro message", err);
-        }
-      };
-      
-      sendIntro();
-    }
-  }, [location.state, socket, token, user]);
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -162,7 +141,6 @@ const ChatPage = () => {
   const handleSend = async (e) => {
     e.preventDefault();
     if (!message.trim() || !activeChat) return;
-    
     try {
       const config = { headers: { Authorization: `Bearer ${token}` } };
       await axios.post('/api/chat', { receiverId: activeChat, message }, config);
@@ -174,155 +152,272 @@ const ChatPage = () => {
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         isRead: false
       };
-      
       setMessages([...messages, newMsg]);
       setMessage('');
 
       if (socket) {
         socket.emit("send_message", {
-          senderId: user?._id,
-          receiverId: activeChat,
+          senderId: user?.id?.toString(),
+          receiverId: activeChat.toString(),
           text: message
         });
       }
+      fetchConvos();
     } catch (err) {
       console.error("Error sending message", err);
     }
   };
 
-  const selectedChat = conversations.find(c => c.id === activeChat);
+  const handleSelectChat = (chatId) => {
+    setActiveChat(chatId);
+    setSearchQuery('');
+    setSearchResults([]);
+  };
+
+  const selectedChatData =
+    conversations.find(c => c.id.toString() === activeChat?.toString()) ||
+    searchResults.find(u => u._id.toString() === activeChat?.toString());
+
+  /* ── Avatar colour cycling ── */
+  const avatarColors = [
+    'bg-orange-100 text-orange-700',
+    'bg-emerald-100 text-emerald-700',
+    'bg-orange-100 text-orange-700',
+    'bg-sky-100 text-sky-700',
+    'bg-pink-100 text-pink-700',
+  ];
+  const getAvatarColor = (name = '') =>
+    avatarColors[name.charCodeAt(0) % avatarColors.length];
 
   return (
-    <div className="min-h-screen bg-slate-50/50 pt-28 pb-12 px-4">
-      <div className="max-w-[1400px] mx-auto h-[calc(100vh-180px)] flex bg-white border border-slate-100 rounded-[3rem] shadow-2xl shadow-indigo-100/50 overflow-hidden font-['Outfit']">
-        
-        {/* 📁 LEFT PANEL - CONVERSATIONS (350px) */}
-        <div className="w-full md:w-[400px] border-r border-slate-50 flex flex-col bg-slate-50/30">
-          <div className="p-8 pb-6">
-            <h2 className="text-2xl font-black text-slate-900 mb-6">Messages</h2>
+    <div className="w-full h-[calc(100vh-160px)] min-h-[600px] flex">
+      <div className="w-full h-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden flex shadow-sm">
+
+        {/* ── SIDEBAR ── */}
+        <div className={cn(
+          "w-full md:w-[320px] border-r border-zinc-100 dark:border-zinc-800 flex flex-col bg-zinc-50 dark:bg-zinc-950 shrink-0",
+          activeChat ? "hidden md:flex" : "flex"
+        )}>
+
+          {/* Header */}
+          <div className="px-5 pt-5 pb-4 space-y-4 border-b border-zinc-100 dark:border-zinc-800">
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-500 text-zinc-900 dark:text-white tracking-tight">Messages</h2>
+              <button className="w-7 h-7 flex items-center justify-center rounded-lg border border-zinc-200 dark:border-zinc-700 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
+                <Plus size={14} strokeWidth={2.5} />
+              </button>
+            </div>
+
+            {/* Search */}
             <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              <input 
-                type="text" 
-                placeholder="Search conversations..."
-                className="w-full pl-12 pr-6 py-4 bg-white border border-slate-100 rounded-2xl outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 transition-all font-medium text-sm"
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={14} />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search or start new chat"
+                className="w-full pl-9 pr-4 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-sm text-zinc-700 dark:text-zinc-200 placeholder:text-zinc-400 outline-none focus:border-orange-500 transition-colors"
               />
+              {isSearching && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 border-2 border-zinc-200 border-t-orange-500 rounded-full animate-spin" />
+              )}
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-4 space-y-2 pb-8">
-            {conversations.map((chat) => (
-              <div 
-                key={chat.id}
-                onClick={() => setActiveChat(chat.id)}
-                className={`p-5 rounded-[2rem] cursor-pointer transition-all flex items-center gap-4 group ${activeChat === chat.id ? 'bg-white shadow-xl shadow-indigo-100/50 border-transparent' : 'hover:bg-white border border-transparent hover:border-slate-100'}`}
-              >
-                <div className="relative">
-                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-black text-xl text-white shadow-lg ${activeChat === chat.id ? 'bg-indigo-600' : 'bg-slate-200 text-slate-500 group-hover:bg-indigo-400 transition-colors'}`}>
-                    {chat.name.charAt(0)}
+          {/* List */}
+          <div className="flex-1 overflow-y-auto py-2 px-2 space-y-0.5">
+            {searchQuery.trim().length > 0 ? (
+              <>
+                <p className="px-3 py-1 text-[10px] font-500 text-zinc-400 uppercase tracking-widest">Results</p>
+                {searchResults.length === 0 && !isSearching ? (
+                  <div className="py-16 text-center text-xs text-zinc-400">No users found</div>
+                ) : searchResults.map(u => (
+                  <motion.div
+                    key={u._id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    onClick={() => handleSelectChat(u._id)}
+                    className="flex items-center gap-3 p-3 rounded-xl cursor-pointer hover:bg-white dark:hover:bg-zinc-800 transition-colors"
+                  >
+                    <div className={cn("w-9 h-9 rounded-full flex items-center justify-center text-sm font-500", getAvatarColor(u.name))}>
+                      {u.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-500 text-zinc-900 dark:text-white truncate">{u.name}</p>
+                      <p className="text-xs text-zinc-400 truncate">{u.email}</p>
+                    </div>
+                  </motion.div>
+                ))}
+              </>
+            ) : conversations.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full gap-3 opacity-40 py-24">
+                <MessageSquare size={36} className="text-zinc-400" />
+                <p className="text-xs text-zinc-400">No conversations yet</p>
+              </div>
+            ) : conversations.map((chat) => {
+              const isActive = activeChat?.toString() === chat.id?.toString();
+              return (
+                <div
+                  key={chat.id}
+                  onClick={() => setActiveChat(chat.id)}
+                  className={cn(
+                    "flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-colors relative",
+                    isActive
+                      ? "bg-orange-500/10 dark:bg-orange-500/20"
+                      : "hover:bg-white dark:hover:bg-zinc-800"
+                  )}
+                >
+                  <div className="relative shrink-0">
+                    <div className={cn("w-10 h-10 rounded-full flex items-center justify-center text-sm font-500", isActive ? "bg-orange-500 text-white" : getAvatarColor(chat.name))}>
+                      {chat.name.charAt(0).toUpperCase()}
+                    </div>
+                    {chat.online && (
+                      <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-zinc-50 dark:border-zinc-950" />
+                    )}
                   </div>
-                  {chat.online && (
-                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-4 border-white rounded-full"></div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <p className={cn("text-sm font-500 truncate", isActive ? "text-orange-600 dark:text-orange-400" : "text-zinc-900 dark:text-white")}>{chat.name}</p>
+                      <span className="text-[10px] text-zinc-400 shrink-0 ml-2">
+                        {new Date(chat.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    <p className="text-xs text-zinc-400 truncate">{chat.lastMsg}</p>
+                  </div>
+
+                  {chat.unread > 0 && !isActive && (
+                    <span className="w-5 h-5 bg-orange-500 text-white text-[10px] font-500 rounded-full flex items-center justify-center shrink-0">
+                      {chat.unread}
+                    </span>
                   )}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-center mb-1">
-                    <h4 className="font-bold text-slate-900 truncate">{chat.name}</h4>
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{chat.time}</span>
-                  </div>
-                  <p className={`text-xs truncate ${chat.unread > 0 ? 'font-black text-indigo-600' : 'font-medium text-slate-500'}`}>
-                    {chat.lastMsg}
-                  </p>
-                </div>
-                {chat.unread > 0 && (
-                  <div className="w-5 h-5 bg-indigo-600 text-white text-[10px] font-black rounded-full flex items-center justify-center">
-                    {chat.unread}
-                  </div>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
-        {/* 💬 RIGHT PANEL - CHAT WINDOW */}
-        <div className="flex-1 flex flex-col bg-white overflow-hidden relative">
-          {/* Chat Header */}
-          <header className="p-6 md:px-10 border-b border-slate-50 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-               <button className="md:hidden p-2 text-slate-400"><ArrowLeft size={20} /></button>
-               <div className="w-12 h-12 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center justify-center text-indigo-600 font-black text-lg">
-                 {selectedChat?.name?.charAt(0) || '?'}
-               </div>
-               <div>
-                 <h3 className="font-black text-slate-900 text-lg leading-tight">{selectedChat?.name || 'Select a Conversation'}</h3>
-                 <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-1.5 mt-0.5">
-                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
-                    {selectedChat?.online ? 'Online' : 'Active'}
-                 </p>
-               </div>
-            </div>
-            <div className="flex items-center gap-4">
-               <button className="p-3 bg-slate-50 text-slate-400 hover:text-slate-600 rounded-xl transition-all shadow-sm active:scale-90"><MoreVertical size={18} /></button>
-            </div>
-          </header>
+        {/* ── MAIN CHAT ── */}
+        <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-zinc-900">
 
-          {/* Messages List */}
-          <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-8 bg-slate-50/20">
-            <div className="text-center">
-               <span className="px-5 py-1.5 bg-white border border-slate-100 text-slate-400 text-[10px] font-black uppercase tracking-widest rounded-full shadow-sm">
-                 Today, May 15
-               </span>
-            </div>
-            
-            {messages.map((msg, i) => (
-              <div 
-                key={i} 
-                className={`flex ${msg.sender === 'me' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-500`}
-              >
-                <div className={`max-w-[70%] md:max-w-[50%] space-y-2`}>
-                  <div 
-                    className={`py-4 px-6 rounded-3xl text-sm font-medium leading-relaxed ${
-                      msg.sender === 'me' 
-                        ? 'bg-indigo-600 text-white rounded-tr-sm shadow-xl shadow-indigo-100' 
-                        : 'bg-white text-slate-700 rounded-tl-sm border border-slate-100 shadow-sm'
-                    }`}
-                  >
-                    {msg.text}
+          {activeChat ? (
+            <>
+              {/* Chat Header */}
+              <header className="px-5 py-3.5 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between bg-white dark:bg-zinc-900">
+                <div className="flex items-center gap-3">
+                  <button onClick={() => setActiveChat(null)} className="md:hidden p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 transition-colors mr-1">
+                    <ArrowLeft size={18} />
+                  </button>
+                  <div className="relative">
+                    <div className={cn("w-9 h-9 rounded-full flex items-center justify-center text-sm font-500", getAvatarColor(selectedChatData?.name))}>
+                      {selectedChatData?.name?.charAt(0)?.toUpperCase()}
+                    </div>
+                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white dark:border-zinc-900" />
                   </div>
-                  <div className={`flex items-center gap-2 px-2 ${msg.sender === 'me' ? 'justify-end' : 'justify-start'}`}>
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">
-                      {msg.time}
-                    </span>
-                    {msg.sender === 'me' && <CheckCheck size={14} className={msg.isRead ? "text-blue-500" : "text-slate-400"} />}
+                  <div>
+                    <p className="text-sm font-500 text-zinc-900 dark:text-white leading-tight">{selectedChatData?.name}</p>
+                    <p className="text-xs text-green-500 leading-tight">Online</p>
                   </div>
                 </div>
+
+                <div className="flex items-center gap-1.5">
+                  <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-zinc-100 dark:border-zinc-800 text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
+                    <Video size={15} />
+                  </button>
+                  <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-zinc-100 dark:border-zinc-800 text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
+                    <MoreVertical size={15} />
+                  </button>
+                </div>
+              </header>
+
+              {/* Messages */}
+              <div className="flex-1 overflow-y-auto px-5 py-5 space-y-3 scroll-smooth" style={{ scrollbarWidth: 'thin' }}>
+
+                {messages.length === 0 && (
+                  <div className="flex flex-col items-center justify-center h-full gap-3 opacity-30">
+                    <MessageSquare size={40} className="text-zinc-400" />
+                    <p className="text-xs text-zinc-400">Send a message to start chatting</p>
+                  </div>
+                )}
+
+                <AnimatePresence mode="popLayout">
+                  {messages.map((msg, idx) => (
+                    <motion.div
+                      key={msg.id || idx}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.18 }}
+                      className={cn("flex w-full", msg.sender === 'me' ? "justify-end" : "justify-start")}
+                    >
+                      <div className={cn("flex flex-col max-w-[68%]", msg.sender === 'me' ? "items-end" : "items-start")}>
+                        <div className={cn(
+                          "px-4 py-2.5 rounded-2xl text-sm leading-relaxed",
+                          msg.sender === 'me'
+                            ? "bg-orange-500 text-white rounded-br-md"
+                            : "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-bl-md"
+                        )}>
+                          {msg.text}
+                        </div>
+                        <div className={cn("flex items-center gap-1.5 mt-1 px-1", msg.sender === 'me' ? "flex-row-reverse" : "flex-row")}>
+                          <span className="text-[10px] text-zinc-400">{msg.time}</span>
+                          {msg.sender === 'me' && (
+                            <CheckCheck size={12} className={msg.isRead ? "text-orange-400" : "text-zinc-400"} />
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+                <div ref={scrollRef} />
               </div>
-            ))}
-            <div ref={scrollRef} />
-          </div>
 
-          {/* Messaging Input */}
-          <footer className="p-6 md:px-10 border-t border-slate-50 bg-white">
-            <form onSubmit={handleSend} className="bg-slate-50 p-2 rounded-3xl flex items-center gap-2 border border-transparent focus-within:border-indigo-200 focus-within:bg-white focus-within:shadow-2xl focus-within:shadow-indigo-100 transition-all">
-              <input 
-                type="text" 
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder="Type your message here..."
-                className="flex-grow bg-transparent border-none text-slate-800 text-sm font-medium p-4 outline-none placeholder-slate-400"
-              />
-              <button 
-                type="submit"
-                disabled={!message.trim()}
-                className="p-4 bg-indigo-600 hover:bg-black text-white rounded-2xl shadow-xl shadow-indigo-200 transition-all active:scale-[0.8] disabled:opacity-50"
-              >
-                <Send size={20} />
-              </button>
-            </form>
-          </footer>
+              {/* Input */}
+              <footer className="px-4 py-3 border-t border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+                <form
+                  onSubmit={handleSend}
+                  className="flex items-center gap-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-2xl px-4 py-2 focus-within:border-orange-300 dark:focus-within:border-orange-700 transition-colors"
+                >
+                  <button type="button" className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors">
+                    <Smile size={18} />
+                  </button>
+                  <button type="button" className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors">
+                    <Paperclip size={18} />
+                  </button>
 
-          {/* Decorative corner shape */}
-          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-48 h-48 bg-indigo-600/5 -z-10 rounded-full blur-3xl"></div>
+                  <input
+                    type="text"
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    placeholder="Type a message..."
+                    className="flex-1 bg-transparent border-none text-sm text-zinc-800 dark:text-zinc-200 outline-none placeholder:text-zinc-400 px-2"
+                  />
+
+                  <motion.button
+                    type="submit"
+                    whileTap={{ scale: 0.92 }}
+                    disabled={!message.trim()}
+                    className="w-8 h-8 rounded-full bg-orange-500 hover:bg-orange-600 disabled:opacity-30 flex items-center justify-center transition-colors shrink-0"
+                  >
+                    <Send size={14} strokeWidth={2.5} className="text-white" />
+                  </motion.button>
+                </form>
+              </footer>
+            </>
+          ) : (
+            /* Empty state */
+            <div className="flex-1 flex flex-col items-center justify-center gap-4 p-12 text-center">
+              <div className="w-16 h-16 bg-orange-500/10 dark:bg-orange-500/20 rounded-2xl flex items-center justify-center">
+                <MessageSquare size={28} className="text-orange-500" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-500 text-zinc-900 dark:text-white">Your messages</h3>
+                <p className="text-sm text-zinc-400 max-w-xs">
+                  Select a conversation from the sidebar or search for a user to start chatting.
+                </p>
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
     </div>
