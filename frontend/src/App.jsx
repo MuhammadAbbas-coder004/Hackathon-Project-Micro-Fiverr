@@ -135,7 +135,7 @@ function App() {
           <Route path="/jobs/:id" element={<PublicRoute><MainLayout><JobDetail /></MainLayout></PublicRoute>} />
           <Route path="/services" element={<PublicRoute><MainLayout><ServiceListing /></MainLayout></PublicRoute>} />
           <Route path="/services/:id" element={<PublicRoute><MainLayout><ServiceDetail /></MainLayout></PublicRoute>} />
-          <Route path="/radar" element={<MainLayout><ProtectedRoute roles={[ROLES.CLIENT]}><FreelancerRadar /></ProtectedRoute></MainLayout>} />
+          <Route path="/radar" element={<ProtectedRoute roles={[ROLES.CLIENT]}><FreelancerRadar /></ProtectedRoute>} />
           <Route path="/track-client/:bookingId" element={<ProtectedRoute roles={[ROLES.FREELANCER]}><LiveClientTracking /></ProtectedRoute>} />
           <Route path="/checkout/:serviceId" element={<MainLayout><ProtectedRoute><Checkout /></ProtectedRoute></MainLayout>} />
           <Route path="/track/:bookingId" element={<MainLayout><ProtectedRoute><LiveTracking /></ProtectedRoute></MainLayout>} />

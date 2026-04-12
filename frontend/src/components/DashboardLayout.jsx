@@ -29,6 +29,9 @@ import {
   MdPerson,
   MdHelpOutline,
   MdKeyboardArrowLeft,
+  MdSearch,
+  MdFormatListBulleted,
+  MdAccessTime,
   MdAddCircleOutline,
   MdTrendingUp,
 } from 'react-icons/md';
