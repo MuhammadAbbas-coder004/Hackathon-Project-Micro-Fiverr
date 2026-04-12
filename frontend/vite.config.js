@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite'
+// Force reload after installing react-icons
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
