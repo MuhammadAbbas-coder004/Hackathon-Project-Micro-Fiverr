@@ -319,37 +319,28 @@ const FreelancerRadar = () => {
             {/* Background Glow */}
             <div className="absolute top-0 left-0 w-64 h-64 bg-indigo-600/10 blur-[100px] rounded-full pointer-events-none" />
 
-            {/* Header */}
-            <div className="p-10 pb-8 border-b border-white/5 relative z-10">
+            {/* Header Removed to ensure no navbar-like element exists */}
+            <div className="p-10 pb-8 relative z-10 flex flex-col gap-6">
               
-              {/* Back to Home Button */}
+              {/* Back to Home Button - Floating Style */}
               <button 
                 onClick={() => navigate('/')}
-                className="mb-10 flex items-center gap-3 text-slate-500 hover:text-white transition-all group"
+                className="flex items-center gap-4 text-slate-500 hover:text-white transition-all group w-fit"
               >
-                <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-indigo-600 group-hover:border-indigo-500 transition-all">
-                   <ChevronLeft size={20} />
+                <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-indigo-600 group-hover:border-indigo-500 transition-all shadow-xl shadow-black/20">
+                   <ChevronLeft size={22} />
                 </div>
-                <span className="text-[10px] font-black uppercase tracking-[0.4em]">Back to Nexus</span>
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-black uppercase tracking-[0.4em]">Back to Nexus</span>
+                  <span className="text-[8px] font-bold text-slate-700 uppercase tracking-widest mt-0.5">Exit Intelligence Radar</span>
+                </div>
               </button>
 
-              <div className="flex items-center justify-between mb-10">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-3">
-                    <div className="relative flex h-3 w-3">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75" />
-                      <span className="relative inline-flex h-3 w-3 rounded-full bg-indigo-500" />
-                    </div>
-                    <h1 className="text-[12px] font-black text-white uppercase tracking-[0.5em]">Radar Matrix</h1>
-                  </div>
-                  <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] pl-6 leading-none">Scanning active nodes...</p>
-                </div>
-                <div className="bg-indigo-600/10 border border-indigo-500/20 px-4 py-2 rounded-2xl">
-                  <Signal size={14} className="text-indigo-500" />
-                </div>
-              </div>
+              <div className="h-px bg-white/5 w-full mt-4" />
+            </div>
 
-              {/* Search */}
+            {/* Search */}
+            <div className="px-10 mb-8 relative z-10">
               <div className="relative">
                 <Search size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-600" />
                 <input
