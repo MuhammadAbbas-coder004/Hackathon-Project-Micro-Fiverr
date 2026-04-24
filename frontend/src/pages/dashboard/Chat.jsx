@@ -1,18 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Send, Paperclip, MoreVertical, ArrowLeft, Phone, Video, Smile, X, Check, CheckCheck, ImageIcon } from 'lucide-react';
-
-const INDIGO = {
-  50:  '#eef2ff',
-  100: '#e0e7ff',
-  200: '#c7d2fe',
-  300: '#a5b4fc',
-  400: '#818cf8',
-  500: '#6366f1',
-  600: '#4f46e5',
-  700: '#4338ca',
-  800: '#3730a3',
-  900: '#312e81',
-};
+import { Search, Send, Paperclip, MoreVertical, ArrowLeft, Phone, Video, Smile, X, Check, CheckCheck, ImageIcon, Sparkles, MessageSquare } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const initialChats = [
   {
@@ -53,37 +41,35 @@ const autoReplies = [
   "Thanks for the update. I'll follow up shortly.",
 ];
 
-const emojis = ['😊','😂','❤️','👍','🎉','🔥','✅','😍','🙌','💯','😎','🤔','👋','🚀','💡'];
+const quickReactions = [
+  { icon: 'ThumbsUp', label: '+1' },
+  { icon: 'Heart', label: 'Love' },
+  { icon: 'Zap', label: 'Fire' },
+  { icon: 'Check', label: 'Done' },
+  { icon: 'Star', label: 'Star' },
+  { icon: 'Rocket', label: 'Go' },
+];
 
-function Avatar({ name, size = 40, online, ring }) {
+function Avatar({ name, size = 40, online, active }) {
   return (
-    <div style={{ position: 'relative', flexShrink: 0 }}>
-      <div style={{
-        width: size, height: size,
-        background: INDIGO[100],
-        borderRadius: 12,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontWeight: 600, fontSize: size * 0.38,
-        color: INDIGO[600],
-        border: ring ? `2px solid ${INDIGO[400]}` : 'none',
-      }}>{name.charAt(0)}</div>
+    <div className="relative shrink-0">
+      <div 
+        className={`rounded-2xl flex items-center justify-center font-black text-white transition-all duration-300 ${active ? 'bg-indigo-600 shadow-[0_0_20px_rgba(79,70,229,0.4)]' : 'bg-white/5 border border-white/10'}`}
+        style={{ width: size, height: size, fontSize: size * 0.4 }}
+      >
+        {name.charAt(0)}
+      </div>
       {online && (
-        <div style={{
-          position: 'absolute', bottom: -2, right: -2,
-          width: 11, height: 11,
-          background: '#22c55e',
-          borderRadius: '50%',
-          border: '2px solid white',
-        }} />
+        <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-[#0b0e14]" />
       )}
     </div>
   );
 }
 
 function MessageStatus({ status }) {
-  if (status === 'sent') return <Check size={12} style={{ color: INDIGO[300] }} />;
-  if (status === 'delivered') return <CheckCheck size={12} style={{ color: INDIGO[300] }} />;
-  if (status === 'read') return <CheckCheck size={12} style={{ color: '#22c55e' }} />;
+  if (status === 'sent') return <Check size={12} className="text-slate-500" />;
+  if (status === 'delivered') return <CheckCheck size={12} className="text-slate-500" />;
+  if (status === 'read') return <CheckCheck size={12} className="text-emerald-400" />;
   return null;
 }
 
@@ -97,7 +83,6 @@ export default function Chat() {
   const [typing, setTyping] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
   const activeChat = chats.find(c => c.id === activeId);
   const filteredChats = chats.filter(c =>
@@ -140,306 +125,210 @@ export default function Chat() {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
   };
 
-  const getLastMsg = (chat) => {
-    const last = chat.messages[chat.messages.length - 1];
-    return last ? last.text : '';
-  };
-
   const selectChat = (id) => {
     setActiveId(id);
-    if (window.innerWidth < 640) setShowSidebar(false);
+    if (window.innerWidth < 1024) setShowSidebar(false);
   };
 
   return (
-    <div className="min-h-screen bg-purple-50 px-4 pt-24 pb-8">
-      <div style={{
-        display: 'flex',
-        height: 'calc(100vh - 160px)',
-        minHeight: 520,
-        background: 'white',
-        borderRadius: 20,
-        border: `1px solid ${INDIGO[100]}`,
-        overflow: 'hidden',
-        fontFamily: "'DM Sans', sans-serif",
-        position: 'relative',
-        maxWidth: '1400px',
-        margin: '0 auto'
-      }}>
-      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
-
-      {/* SIDEBAR */}
-      <div style={{
-        width: 300,
-        minWidth: 300,
-        borderRight: `1px solid ${INDIGO[100]}`,
-        display: 'flex',
-        flexDirection: 'column',
-        background: '#fafafa',
-        transition: 'transform 0.25s ease',
-        position: window.innerWidth < 640 ? 'absolute' : 'relative',
-        zIndex: 10,
-        height: '100%',
-        transform: (window.innerWidth < 640 && !showSidebar) ? 'translateX(-100%)' : 'translateX(0)',
-      }}>
-        {/* Sidebar Header */}
-        <div style={{ padding: '20px 16px 12px', borderBottom: `1px solid ${INDIGO[50]}` }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <span style={{ fontWeight: 600, fontSize: 17, color: '#111' }}>Messages</span>
-            <div style={{
-              width: 32, height: 32, borderRadius: 10,
-              background: INDIGO[500], display: 'flex',
-              alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer',
-            }}>
-              <svg width="14" height="14" fill="white" viewBox="0 0 24 24"><path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2z"/></svg>
+    <div className="space-y-8 h-[calc(100vh-180px)] min-h-[600px]">
+      
+      {/* ── Header Area ── */}
+      <div className="flex items-center justify-between">
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="px-8 py-4 bg-[#0c0f16]/90 backdrop-blur-3xl border border-white/10 rounded-full ring-1 ring-white/5 shadow-2xl flex items-center gap-5"
+        >
+          <div className="w-10 h-10 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+             <MessageSquare size={20} />
+          </div>
+          <div>
+            <div className="flex items-center gap-2 text-indigo-500 mb-0.5">
+               <Sparkles size={10} className="animate-pulse" />
+               <span className="text-[8px] font-black uppercase tracking-[0.4em]">Comms Sync</span>
             </div>
+            <h1 className="text-xl font-black text-white uppercase tracking-tighter leading-none">Messages</h1>
           </div>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            background: 'white', border: `1px solid ${INDIGO[100]}`,
-            borderRadius: 10, padding: '7px 12px',
-          }}>
-            <Search size={14} color={INDIGO[400]} />
-            <input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Search..."
-              style={{
-                border: 'none', outline: 'none', background: 'transparent',
-                fontSize: 13, width: '100%', color: '#333',
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Chat List */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 10px' }}>
-          {filteredChats.map(chat => {
-            const isActive = chat.id === activeId;
-            return (
-              <button
-                key={chat.id}
-                onClick={() => selectChat(chat.id)}
-                style={{
-                  width: '100%', display: 'flex', alignItems: 'center', gap: 12,
-                  padding: '10px 10px', borderRadius: 14, marginBottom: 4,
-                  border: isActive ? `1px solid ${INDIGO[100]}` : '1px solid transparent',
-                  background: isActive ? 'white' : 'transparent',
-                  cursor: 'pointer', textAlign: 'left',
-                  boxShadow: isActive ? `0 2px 8px ${INDIGO[100]}` : 'none',
-                  transition: 'all 0.15s',
-                }}
-              >
-                <Avatar name={chat.name} size={44} online={chat.online} ring={isActive} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: 600, fontSize: 13.5, color: '#111' }}>{chat.name}</span>
-                    <span style={{ fontSize: 10.5, color: '#aaa', fontWeight: 500 }}>
-                      {chat.messages[chat.messages.length - 1]?.time}
-                    </span>
-                  </div>
-                  <p style={{
-                    fontSize: 12, color: '#888', margin: '2px 0 0',
-                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                    maxWidth: 150,
-                  }}>{getLastMsg(chat)}</p>
-                </div>
-              </button>
-            );
-          })}
-        </div>
+        </motion.div>
       </div>
 
-      {/* MAIN CHAT */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-
-        {/* Header */}
-        <div style={{
-          padding: '14px 20px',
-          borderBottom: `1px solid ${INDIGO[100]}`,
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          background: 'white',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <button
-              onClick={() => setShowSidebar(true)}
-              style={{
-                display: window.innerWidth < 640 ? 'flex' : 'none',
-                alignItems: 'center', justifyContent: 'center',
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: INDIGO[500], padding: 4,
-              }}
+      {/* ── Chat Architecture (Liquid Glass) ── */}
+      <div className="bg-[#0c0f16]/60 backdrop-blur-3xl border border-white/10 rounded-[40px] sm:rounded-[56px] shadow-2xl overflow-hidden ring-1 ring-white/5 h-full flex relative">
+        
+        {/* Sidebar */}
+        <AnimatePresence>
+          {(showSidebar || window.innerWidth >= 1024) && (
+            <motion.div 
+              initial={{ x: -300 }}
+              animate={{ x: 0 }}
+              exit={{ x: -300 }}
+              className="absolute lg:relative z-40 w-[320px] h-full bg-[#0c0f16]/80 lg:bg-transparent border-r border-white/5 flex flex-col backdrop-blur-3xl lg:backdrop-blur-none"
             >
-              <ArrowLeft size={20} />
-            </button>
-            <Avatar name={activeChat?.name || ''} size={40} online={activeChat?.online} />
-            <div>
-              <div style={{ fontWeight: 600, fontSize: 14.5, color: '#111' }}>{activeChat?.name}</div>
-              <div style={{ fontSize: 11.5, color: activeChat?.online ? '#22c55e' : '#aaa', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4 }}>
-                {activeChat?.online ? (
-                  <><span style={{ width: 6, height: 6, background: '#22c55e', borderRadius: '50%', display: 'inline-block' }} /> Online</>
-                ) : 'Offline'}
-              </div>
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 4 }}>
-            {[Phone, Video, MoreVertical].map((Icon, i) => (
-              <button key={i} style={{
-                width: 36, height: 36, borderRadius: 10,
-                background: i === 2 ? 'transparent' : INDIGO[50],
-                border: `1px solid ${i === 2 ? 'transparent' : INDIGO[100]}`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', color: INDIGO[500],
-              }}>
-                <Icon size={16} />
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Messages */}
-        <div style={{
-          flex: 1, overflowY: 'auto', padding: '20px 20px 8px',
-          background: `linear-gradient(180deg, ${INDIGO[50]}22 0%, white 100%)`,
-          display: 'flex', flexDirection: 'column', gap: 14,
-        }}>
-          {activeChat?.messages.map((msg, i) => {
-            const isMe = msg.from === 'me';
-            return (
-              <div key={msg.id} style={{
-                display: 'flex', alignItems: 'flex-end', gap: 10,
-                flexDirection: isMe ? 'row-reverse' : 'row',
-                animation: i === activeChat.messages.length - 1 ? 'slideUp 0.2s ease' : 'none',
-              }}>
-                {!isMe && <Avatar name={activeChat.name} size={30} />}
-                <div style={{ maxWidth: '65%', display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
-                  <div style={{
-                    padding: '10px 14px',
-                    borderRadius: isMe ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                    background: isMe ? INDIGO[500] : 'white',
-                    border: isMe ? 'none' : `1px solid ${INDIGO[100]}`,
-                    boxShadow: isMe ? `0 4px 12px ${INDIGO[200]}` : '0 1px 4px rgba(0,0,0,0.06)',
-                    color: isMe ? 'white' : '#222',
-                    fontSize: 13.5, lineHeight: 1.55, fontWeight: 400,
-                  }}>{msg.text}</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4, flexDirection: isMe ? 'row-reverse' : 'row' }}>
-                    <span style={{ fontSize: 10, color: '#bbb', fontWeight: 500 }}>{msg.time}</span>
-                    {isMe && <MessageStatus status={msg.status} />}
-                  </div>
+              <div className="p-8 space-y-6">
+                <div className="flex items-center justify-between">
+                   <h2 className="text-lg font-black text-white uppercase tracking-tighter">Identity Log</h2>
+                   <button className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 transition-colors border border-white/10">
+                      <Search size={14} />
+                   </button>
+                </div>
+                
+                <div className="relative group">
+                   <input 
+                      value={search}
+                      onChange={e => setSearch(e.target.value)}
+                      placeholder="Filter nodes..."
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-5 text-[11px] font-bold text-white uppercase tracking-widest placeholder:text-slate-600 outline-none focus:border-indigo-500/50 transition-all"
+                   />
                 </div>
               </div>
-            );
-          })}
 
-          {typing && (
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10 }}>
-              <Avatar name={activeChat?.name || ''} size={30} />
-              <div style={{
-                padding: '12px 16px', borderRadius: '16px 16px 16px 4px',
-                background: 'white', border: `1px solid ${INDIGO[100]}`,
-                display: 'flex', gap: 5, alignItems: 'center',
-              }}>
-                {[0, 1, 2].map(i => (
-                  <div key={i} style={{
-                    width: 7, height: 7, borderRadius: '50%',
-                    background: INDIGO[300],
-                    animation: `bounce 1.2s ${i * 0.2}s infinite`,
-                  }} />
+              <div className="flex-1 overflow-y-auto px-4 pb-8 space-y-2 no-scrollbar">
+                {filteredChats.map(chat => (
+                  <button
+                    key={chat.id}
+                    onClick={() => selectChat(chat.id)}
+                    className={`w-full flex items-center gap-4 p-5 rounded-[28px] transition-all duration-300 group ${chat.id === activeId ? 'bg-indigo-600 shadow-2xl ring-1 ring-white/20' : 'hover:bg-white/5'}`}
+                  >
+                    <Avatar name={chat.name} size={48} online={chat.online} active={chat.id === activeId} />
+                    <div className="flex-1 min-w-0 text-left">
+                       <div className="flex justify-between items-center mb-1">
+                          <span className={`font-black text-[13px] uppercase tracking-tight ${chat.id === activeId ? 'text-white' : 'text-white group-hover:text-indigo-400'}`}>{chat.name}</span>
+                          <span className="text-[9px] font-bold text-slate-500 uppercase">{chat.messages[chat.messages.length - 1]?.time}</span>
+                       </div>
+                       <p className={`text-[11px] font-medium truncate ${chat.id === activeId ? 'text-indigo-100' : 'text-slate-500'}`}>
+                          {chat.messages[chat.messages.length - 1]?.text}
+                       </p>
+                    </div>
+                  </button>
                 ))}
               </div>
-            </div>
+            </motion.div>
           )}
-          <div ref={messagesEndRef} />
-        </div>
+        </AnimatePresence>
 
-        {/* Emoji Picker */}
-        {showEmoji && (
-          <div style={{
-            padding: '10px 16px',
-            borderTop: `1px solid ${INDIGO[50]}`,
-            background: 'white',
-            display: 'flex', flexWrap: 'wrap', gap: 8,
-          }}>
-            {emojis.map(e => (
-              <button
-                key={e}
-                onClick={() => setMessage(m => m + e)}
-                style={{
-                  fontSize: 20, background: 'none', border: 'none',
-                  cursor: 'pointer', borderRadius: 8, padding: 4,
-                  transition: 'transform 0.1s',
-                }}
-                onMouseEnter={el => el.currentTarget.style.transform = 'scale(1.3)'}
-                onMouseLeave={el => el.currentTarget.style.transform = 'scale(1)'}
-              >{e}</button>
-            ))}
+        {/* Main Chat Area */}
+        <div className="flex-1 flex flex-col min-w-0 relative">
+          
+          {/* Top Bar */}
+          <div className="px-10 py-6 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
+            <div className="flex items-center gap-5">
+              <button onClick={() => setShowSidebar(true)} className="lg:hidden w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-slate-400">
+                 <ArrowLeft size={20} />
+              </button>
+              <Avatar name={activeChat?.name || ''} size={44} online={activeChat?.online} />
+              <div>
+                 <h3 className="text-xl font-black text-white uppercase tracking-tighter leading-none">{activeChat?.name}</h3>
+                 <div className="flex items-center gap-2 mt-1.5">
+                    <div className={`w-1.5 h-1.5 rounded-full ${activeChat?.online ? 'bg-emerald-500 animate-pulse' : 'bg-slate-700'}`} />
+                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">
+                      {activeChat?.online ? 'Synchronized' : 'Offline'}
+                    </span>
+                 </div>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-3">
+               {[Phone, Video, MoreVertical].map((Icon, i) => (
+                  <button key={i} className="w-11 h-11 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 transition-all border border-white/5">
+                     <Icon size={18} />
+                  </button>
+               ))}
+            </div>
           </div>
-        )}
 
-        {/* Input */}
-        <div style={{
-          padding: '12px 16px 14px',
-          borderTop: `1px solid ${INDIGO[100]}`,
-          background: 'white',
-        }}>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 10,
-            background: INDIGO[50],
-            border: `1px solid ${INDIGO[200]}`,
-            borderRadius: 16, padding: '8px 10px 8px 14px',
-          }}>
-            <button
-              onClick={() => setShowEmoji(v => !v)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: showEmoji ? INDIGO[500] : '#aaa', display: 'flex', padding: 2 }}
-            >
-              {showEmoji ? <X size={18} /> : <Smile size={18} />}
-            </button>
-            <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#aaa', display: 'flex', padding: 2 }}>
-              <Paperclip size={18} />
-            </button>
-            <input
-              ref={inputRef}
-              value={message}
-              onChange={e => setMessage(e.target.value)}
-              onKeyDown={handleKey}
-              placeholder="Type a message..."
-              style={{
-                flex: 1, border: 'none', background: 'transparent',
-                outline: 'none', fontSize: 13.5, color: '#222',
-                fontFamily: 'inherit', lineHeight: '1.5',
-              }}
-            />
-            <button
-              onClick={handleSend}
-              disabled={!message.trim()}
-              style={{
-                width: 36, height: 36, borderRadius: 11,
-                background: message.trim() ? INDIGO[500] : INDIGO[200],
-                border: 'none', cursor: message.trim() ? 'pointer' : 'default',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                transition: 'all 0.15s', flexShrink: 0,
-                boxShadow: message.trim() ? `0 4px 10px ${INDIGO[300]}` : 'none',
-              }}
-            >
-              <Send size={16} color="white" />
-            </button>
+          {/* Messages Stream */}
+          <div className="flex-1 overflow-y-auto p-10 space-y-8 no-scrollbar bg-gradient-to-b from-[#0c0f16]/20 to-transparent">
+            {activeChat?.messages.map((msg, i) => {
+              const isMe = msg.from === 'me';
+              return (
+                <motion.div 
+                  key={msg.id}
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  className={`flex items-end gap-4 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}
+                >
+                  <div className={`max-w-[70%] sm:max-w-[60%] space-y-2`}>
+                    <div 
+                      className={`px-8 py-5 rounded-[32px] text-sm font-medium leading-relaxed shadow-2xl ${
+                        isMe 
+                        ? 'bg-indigo-600 text-white rounded-br-none ring-1 ring-white/20' 
+                        : 'bg-white/5 text-slate-200 rounded-bl-none border border-white/10 ring-1 ring-white/5'
+                      }`}
+                    >
+                      {msg.text}
+                    </div>
+                    <div className={`flex items-center gap-3 px-2 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
+                      <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">{msg.time}</span>
+                      {isMe && <MessageStatus status={msg.status} />}
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+            {typing && (
+              <div className="flex items-center gap-4">
+                 <div className="bg-white/5 border border-white/10 px-6 py-4 rounded-[28px] rounded-bl-none flex gap-2">
+                    {[0,1,2].map(i => (
+                       <div key={i} className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
+                    ))}
+                 </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Input Unit */}
+          <div className="p-10 bg-white/[0.02] border-t border-white/5">
+             <div className="flex items-center gap-5 bg-white/5 border border-white/10 rounded-[32px] p-2 pr-2 pl-6 focus-within:border-indigo-500/50 transition-all ring-1 ring-white/5">
+                <button 
+                  onClick={() => setShowEmoji(!showEmoji)}
+                  className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all ${showEmoji ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:text-white'}`}
+                >
+                   <Smile size={20} />
+                </button>
+                <button className="text-slate-500 hover:text-white transition-all">
+                   <Paperclip size={20} />
+                </button>
+                
+                <input 
+                  ref={inputRef}
+                  value={message}
+                  onChange={e => setMessage(e.target.value)}
+                  onKeyDown={handleKey}
+                  placeholder="Initialize data transfer..."
+                  className="flex-1 bg-transparent border-none outline-none text-white text-sm font-medium placeholder:text-slate-600 py-4"
+                />
+
+                <motion.button 
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleSend}
+                  disabled={!message.trim()}
+                  className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${
+                    message.trim() 
+                    ? 'bg-indigo-600 text-white shadow-[0_0_20px_rgba(79,70,229,0.4)]' 
+                    : 'bg-white/5 text-slate-700'
+                  }`}
+                >
+                   <Send size={20} />
+                </motion.button>
+             </div>
+             
+             {showEmoji && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex flex-wrap gap-3 mt-6 p-6 bg-white/5 border border-white/10 rounded-[32px] ring-1 ring-white/5"
+                >
+                   {quickReactions.map(r => (
+                     <button key={r.label} onClick={() => { setMessage(m => m + ` [${r.label}] `); setShowEmoji(false); }} className="px-5 py-3 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black text-slate-400 uppercase tracking-widest hover:bg-indigo-600 hover:text-white hover:border-indigo-500 transition-all ring-1 ring-white/5">{r.label}</button>
+                   ))}
+                </motion.div>
+              )}
           </div>
         </div>
       </div>
-
-      <style>{`
-        @keyframes bounce {
-          0%, 80%, 100% { transform: translateY(0); }
-          40% { transform: translateY(-6px); }
-        }
-        @keyframes slideUp {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: ${INDIGO[200]}; border-radius: 4px; }
-      `}</style>
     </div>
   );
 }

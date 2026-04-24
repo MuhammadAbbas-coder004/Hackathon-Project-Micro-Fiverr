@@ -2,8 +2,12 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const http = require("http");
+const dns = require("dns");
 const { Server } = require("socket.io");
 require("dotenv").config();
+
+// Set default DNS to Google to avoid querySrv ECONNREFUSED
+dns.setServers(['8.8.8.8', '8.8.4.4']);
 
 const app = express();
 const server = http.createServer(app);
@@ -114,7 +118,7 @@ io.on("connection", (socket) => {
 // CORS configuration
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://localhost:3000", "http://localhost:5174", "http://127.0.0.1:5174"], // Allow Vite and CRA
+    origin: ["http://localhost:5173", "http://localhost:3000", "http://localhost:5174", "http://localhost:5175", "http://localhost:5176", "http://127.0.0.1:5174"], // Allow Vite and CRA
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -197,7 +201,7 @@ const PORT = process.env.PORT || 5000;
 
 if (!MONGO_URI) {
   console.error("❌ CRITICAL ERROR: MONGO_URI is not defined in .env file!");
-  process.exit(1);
+  // Not exiting so server stays up for diagnostics
 }
 
 if (!JWT_SECRET) {
@@ -210,6 +214,7 @@ const connectDB = async () => {
     // Mongoose 9+ connect options
     await mongoose.connect(MONGO_URI, {
       serverSelectionTimeoutMS: 10000, // Fail after 10s if can't find server
+      family: 4, // Force IPv4 to avoid DNS/SRV issues
     });
     console.log("✅ MongoDB Connected Successfully!");
   } catch (err) {
@@ -249,6 +254,8 @@ server.listen(PORT, '0.0.0.0', () => {
 });
 
 // Connect to Database
-connectDB();
+if (MONGO_URI) {
+    connectDB();
+}
 
 module.exports = app;

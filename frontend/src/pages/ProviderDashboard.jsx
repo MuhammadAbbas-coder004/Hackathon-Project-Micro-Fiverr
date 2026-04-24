@@ -90,9 +90,9 @@ const ProviderDashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f8fafc] flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-[#0b0e14] flex flex-col items-center justify-center">
         <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-        <p className="text-slate-500 font-bold animate-pulse">Setting up your workspace...</p>
+        <p className="text-slate-500 font-black uppercase tracking-widest text-[11px] animate-pulse">Initializing workspace node...</p>
       </div>
     );
   }

@@ -92,9 +92,9 @@ export const AuthProvider = ({ children }) => {
       if (error.response) {
         const { status, data } = error.response;
         if (status === 502 || status === 504) {
-          msg = 'Backend server is not reachable (502/504). Please ensure you ran "npm run dev" from the root folder and check if the backend crashed.';
+          msg = 'Backend server is unreachable (502). Make sure "npm run dev" is running.';
         } else if (status === 503) {
-          msg = 'Database is not connected (503). If you are using MongoDB Atlas, please ensure your current IP address is whitelisted in the Atlas dashboard.';
+          msg = 'Database is currently DISCONNECTED. Please check your MongoDB Atlas URI in .env.';
         } else {
           msg = data?.message || `Server error: ${status}`;
         }

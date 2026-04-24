@@ -69,10 +69,14 @@ const Sidebar = () => {
       <div className="mt-auto p-6 space-y-4">
         <div className="p-4 bg-slate-800/40 rounded-2xl border border-slate-700/30">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold capitalize">
-              {user?.name?.charAt(0) || 'U'}
+            <div className="w-10 h-10 rounded-full bg-white border-2 border-white shadow-sm flex items-center justify-center text-indigo-600 text-sm font-black overflow-hidden ring-2 ring-indigo-100">
+              {user?.avatar ? (
+                <img src={user.avatar} alt="User" className="w-full h-full object-cover" />
+              ) : (
+                user?.name?.charAt(0) || 'U'
+              )}
             </div>
-            <div className="overflow-hidden text-ellipsis">
+            <div className="overflow-hidden">
               <p className="text-sm font-semibold text-white truncate">{user?.name || 'Provider'}</p>
               <p className="text-[11px] text-slate-400 capitalize">{user?.role || 'Freelancer'}</p>
             </div>

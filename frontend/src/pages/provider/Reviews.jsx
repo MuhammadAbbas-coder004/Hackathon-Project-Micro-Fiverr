@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent } from '@/components/ui/Card';
-import { MessageSquare, Calendar, Loader2, Star, Activity, ShieldCheck, Zap } from 'lucide-react';
-import api from '@/utils/api';
-import StarRating from '@/components/ui/StarRating';
-import { cn } from '@/utils/cn';
+import { motion, AnimatePresence } from 'framer-motion';
+import { MessageSquare, Star, Calendar, Zap, ShieldCheck, Sparkles, Activity, Loader2 } from 'lucide-react';
+import { api } from '../../utils/api';
+
+const StarRating = ({ value = 0, size = 18 }) => (
+  <div className="flex gap-1">
+    {[1,2,3,4,5].map(i => (
+      <Star key={i} size={size} className={i <= value ? 'fill-indigo-400 text-indigo-400' : 'text-white/10'} />
+    ))}
+  </div>
+);
 
 const Reviews = () => {
   const [reviews, setReviews] = useState([]);
@@ -33,106 +39,133 @@ const Reviews = () => {
     : '0.0';
 
   if (loading) return (
-    <div className="flex items-center justify-center h-64">
-      <Loader2 className="w-12 h-12 text-orange-500 animate-spin" />
+    <div className="flex items-center justify-center h-[50vh]">
+      <Loader2 className="w-12 h-12 text-indigo-500 animate-spin" />
     </div>
   );
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-500 p-1 min-h-[calc(100vh-160px)]">
-      
-      {/* 🚀 Header Section */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
-        <div className="space-y-1">
-          <h1 className="text-4xl font-black text-white tracking-widest uppercase leading-none">
-            Client <span className="text-orange-500">Feedback</span>
-          </h1>
-          <div className="flex items-center gap-2 pt-1">
-             <Activity size={14} className="text-orange-500 animate-pulse" />
-             <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest leading-none">Performance Analytics Active</p>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-4 px-6 py-4 bg-zinc-900/50 border border-white/5 rounded-2xl shadow-2xl backdrop-blur-xl">
-          <div className="relative">
-             <Star className="w-6 h-6 fill-orange-500 text-orange-500 animate-pulse" />
-             <div className="absolute inset-0 bg-orange-500/20 blur-lg rounded-full" />
-          </div>
-          <div className="flex flex-col">
-             <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Global Status</span>
-             <span className="text-xl font-black text-white tracking-tighter leading-none">{averageRating} Average Rating</span>
-          </div>
-        </div>
-      </div>
+    <div className="space-y-12 pb-20 relative overflow-hidden">
+      {/* Background Glow */}
+      <div className="fixed top-0 right-0 w-[500px] h-[500px] bg-indigo-600/5 blur-[120px] rounded-full pointer-events-none -z-10" />
+      <div className="fixed bottom-0 left-0 w-[400px] h-[400px] bg-indigo-900/5 blur-[100px] rounded-full pointer-events-none -z-10" />
 
-      {/* 📁 Review Registry */}
+      {/* Header (Liquid Glass) */}
+      <header className="pt-6">
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="flex items-center gap-3 mb-4"
+        >
+          <div className="w-10 h-10 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+            <MessageSquare size={22} />
+          </div>
+          <span className="text-[12px] font-black text-indigo-400 uppercase tracking-[0.3em] leading-none">Client Feedback</span>
+        </motion.div>
+        
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
+          <div className="space-y-4">
+            <motion.h1 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-5xl md:text-7xl font-black text-white tracking-tighter leading-[0.9] uppercase"
+            >
+              Reputation<br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-indigo-600/40">& Reviews</span>
+            </motion.h1>
+            <p className="text-[14px] font-bold text-slate-500 max-w-lg mt-6">
+              Your performance registry based on verified client collaborations and service deliveries.
+            </p>
+          </div>
+
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex items-center gap-6 px-8 py-6 bg-[#0c0f16]/60 backdrop-blur-3xl border border-white/10 rounded-[40px] shadow-2xl ring-1 ring-white/5"
+          >
+            <div className="relative">
+               <Star className="w-10 h-10 fill-indigo-400 text-indigo-400 drop-shadow-[0_0_15px_rgba(99,102,241,0.4)]" />
+            </div>
+            <div className="flex flex-col">
+               <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Global Status</span>
+               <span className="text-3xl font-black text-white tracking-tighter leading-none">{averageRating} Average</span>
+            </div>
+          </motion.div>
+        </div>
+      </header>
+
+      {/* Review Registry (Liquid Glass) */}
       <div className="grid gap-8">
         {reviews.length === 0 ? (
-          <div className="p-32 text-center border-dashed-2 border-2 border-white/5 rounded-[3.5rem] bg-zinc-950/20 backdrop-blur-sm relative overflow-hidden group">
-            <div className="absolute inset-0 bg-gradient-to-b from-orange-500/5 to-transparent pointer-events-none" />
-            <MessageSquare className="w-20 h-20 mx-auto mb-8 text-zinc-800 opacity-20 transition-transform group-hover:scale-110" />
-            <h3 className="text-3xl font-black text-white mb-3 uppercase tracking-tighter">No signals detected</h3>
-            <p className="text-sm font-bold text-zinc-600 uppercase tracking-widest max-w-sm mx-auto">Collaboration feedback will manifest here once technical operations concluding successfully.</p>
-          </div>
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="p-32 text-center border-2 border-dashed border-white/5 rounded-[64px] bg-[#0c0f16]/40 backdrop-blur-3xl flex flex-col items-center justify-center relative overflow-hidden group ring-1 ring-white/5"
+          >
+            <div className="w-20 h-20 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-8">
+              <MessageSquare className="w-10 h-10 text-slate-700" />
+            </div>
+            <h3 className="text-3xl font-black text-white/20 tracking-tighter uppercase">No Reviews Yet</h3>
+            <p className="text-[14px] font-bold text-slate-600 mt-3 max-w-sm mx-auto">Feedback will appear here once your collaborations are completed successfully.</p>
+          </motion.div>
         ) : (
-          reviews.map((review) => (
-            <div 
+          reviews.map((review, idx) => (
+            <motion.div 
               key={review._id} 
-              className="bg-zinc-900/30 border border-white/5 rounded-[3rem] p-10 hover:border-orange-500/30 transition-all duration-500 group relative overflow-hidden backdrop-blur-md shadow-[0_30px_60px_rgba(0,0,0,0.4)]"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.1 }}
+              whileHover={{ y: -8 }}
+              className="bg-[#0c0f16]/60 backdrop-blur-3xl border border-white/10 rounded-[48px] p-12 transition-all duration-500 group relative overflow-hidden shadow-2xl hover:bg-[#0c0f16]/80 ring-1 ring-white/5"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/5 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2 pointer-events-none" />
               
               <div className="flex flex-col gap-10 relative z-10">
-                <div className="flex items-start justify-between gap-6">
-                  <div className="flex items-center gap-6">
-                    <div className="w-16 h-16 rounded-2xl bg-orange-500/10 flex items-center justify-center text-orange-500 text-2xl font-black border border-orange-500/10 shadow-xl group-hover:rotate-6 transition-transform">
+                <div className="flex flex-col md:flex-row md:items-start justify-between gap-8">
+                  <div className="flex items-center gap-8">
+                    <div className="w-20 h-20 rounded-[28px] bg-indigo-600 flex items-center justify-center text-white text-3xl font-black shadow-xl group-hover:rotate-6 transition-transform">
                       {review.reviewer?.name?.charAt(0) || review.userName?.charAt(0) || 'U'}
                     </div>
                     <div className="space-y-2">
-                       <p className="font-black text-white text-2xl uppercase tracking-tighter leading-none">
+                       <p className="font-black text-white text-3xl tracking-tighter leading-none uppercase">
                         {review.reviewer?.name || review.userName || 'Verified Client'}
                       </p>
-                      <div className="flex items-center gap-3">
-                         <StarRating value={review.rating} readonly size={16} />
-                         <div className="w-1 h-1 rounded-full bg-zinc-800" />
-                         <span className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] leading-none">Verified Collaboration</span>
+                      <div className="flex items-center gap-4">
+                         <div className="flex bg-white/5 px-3 py-1.5 rounded-xl border border-white/10 ring-1 ring-white/5">
+                            <StarRating value={review.rating} size={18} />
+                         </div>
+                         <div className="w-1.5 h-1.5 rounded-full bg-white/10" />
+                         <span className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] leading-none">Verified Collaboration</span>
                       </div>
                     </div>
                   </div>
-                  <div className="hidden md:flex items-center gap-3 text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em] bg-black/40 px-5 py-2.5 rounded-full border border-white/5 transition-all group-hover:bg-black/60">
-                    <Calendar className="w-3.5 h-3.5" />
+                  <div className="flex items-center gap-3 text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] bg-white/5 px-6 py-3 rounded-2xl border border-white/10 ring-1 ring-white/5">
+                    <Calendar className="w-4 h-4 opacity-40" />
                     {new Date(review.createdAt).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}
                   </div>
                 </div>
 
-                <div className="relative">
-                  <div className="absolute -left-6 top-0 w-1.5 h-full bg-orange-500/10 rounded-full group-hover:bg-orange-500/40 transition-all duration-700" />
-                  <p className="text-zinc-300 text-xl font-medium leading-relaxed italic px-4">
+                <div className="relative py-4">
+                  <p className="text-white/60 text-2xl font-bold leading-relaxed px-2">
                     "{review.comment}"
                   </p>
                 </div>
 
                 {review.serviceTitle && (
-                  <div className="flex items-center justify-between pt-6 border-t border-white/5">
-                     <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.4em] text-orange-500/60">
-                        <Zap size={14} className="text-orange-500" />
+                  <div className="flex items-center justify-between pt-8 border-t border-white/5">
+                     <div className="flex items-center gap-3 text-[11px] font-black uppercase tracking-[0.3em] text-indigo-400">
+                        <div className="w-8 h-8 rounded-lg bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center"><Zap size={16} /></div>
                         <span>Module: {review.serviceTitle}</span>
                      </div>
-                     <div className="flex items-center gap-2">
-                        <ShieldCheck size={14} className="text-zinc-700" />
-                        <span className="text-[9px] font-black text-zinc-800 uppercase tracking-widest">Authenticated Signature</span>
+                     <div className="hidden sm:flex items-center gap-2">
+                        <ShieldCheck size={16} className="text-emerald-400" />
+                        <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Authenticated Registry</span>
                      </div>
                   </div>
                 )}
               </div>
-            </div>
+            </motion.div>
           ))
         )}
-      </div>
-
-      {/* 🚀 Footer Analytics Summary */}
-      <div className="flex justify-center pt-10 opacity-20">
-         <div className="h-px w-32 bg-gradient-to-r from-transparent via-zinc-500 to-transparent" />
       </div>
     </div>
   );

@@ -1,72 +1,102 @@
 import React from 'react';
-import { Plus, Edit2, Trash2, Users, Clock, AlertCircle } from 'lucide-react';
+import { Plus, Edit2, Trash2, Users, Clock, AlertCircle, Sparkles, Briefcase } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const MyPostedJobs = ({ jobs = [] }) => {
   const displayJobs = jobs;
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-500">
-      <div className="flex justify-between items-end">
-        <div>
-          <h1 className="text-3xl font-black text-slate-900 mb-2 tracking-tighter uppercase">My Posted Jobs</h1>
-          <p className="text-slate-500 font-medium">Manage your active job listings and review applications.</p>
-        </div>
-        <button className="flex items-center gap-2 px-8 py-4 bg-indigo-600 text-white font-black rounded-2xl shadow-xl shadow-indigo-100 hover:bg-slate-900 transition-all hover:-translate-y-0.5 text-sm uppercase tracking-widest">
-          <Plus size={20} /> Post a New Job
-        </button>
+    <div className="space-y-12">
+
+      {/* Header (Liquid) */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-8">
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="px-8 py-6 bg-[#0c0f16]/90 backdrop-blur-3xl border border-white/10 rounded-[40px] ring-1 ring-white/5 shadow-2xl flex items-center gap-6"
+        >
+          <div className="w-14 h-14 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+             <Briefcase size={28} />
+          </div>
+          <div>
+            <div className="flex items-center gap-2 text-indigo-500 mb-1">
+               <Sparkles size={14} className="animate-pulse" />
+               <span className="text-[9px] font-black uppercase tracking-[0.4em]">Deployed Nodes</span>
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-black text-white uppercase tracking-tighter leading-none">My <span className="text-indigo-500">Jobs</span></h1>
+          </div>
+        </motion.div>
+
+        <motion.button 
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="flex items-center gap-4 px-10 py-5 bg-indigo-600 text-white font-black text-[12px] uppercase tracking-[0.3em] rounded-full shadow-2xl shadow-indigo-600/20 hover:bg-indigo-500 transition-all group"
+        >
+          <Plus size={20} className="group-hover:rotate-90 transition-transform duration-500" /> Post New Job
+        </motion.button>
       </div>
 
       <div className="space-y-6">
-        {displayJobs.map((job) => (
-          <div key={job._id} className="group bg-white rounded-[2.5rem] border border-slate-100 p-8 flex flex-col md:flex-row md:items-center justify-between gap-8 hover:shadow-2xl hover:border-indigo-100 transition-all duration-500 relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-2 h-full bg-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        {displayJobs.map((job, i) => (
+          <motion.div 
+            key={job._id} 
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.08 }}
+            className="group bg-[#0c0f16]/60 backdrop-blur-3xl border border-white/10 rounded-[40px] p-10 flex flex-col md:flex-row md:items-center justify-between gap-8 hover:bg-[#0c0f16]/80 transition-all duration-500 relative overflow-hidden ring-1 ring-white/5 shadow-2xl"
+          >
+            <div className="absolute left-0 top-6 bottom-6 w-1.5 bg-indigo-600 rounded-r-full opacity-0 group-hover:opacity-100 transition-opacity shadow-[0_0_15px_#4f46e5]"></div>
             
             <div className="flex items-center gap-8">
-              <div className="w-20 h-20 bg-slate-50 rounded-[1.5rem] flex items-center justify-center text-4xl group-hover:bg-indigo-50 transition-colors shadow-inner">
-                💼
+              <div className="w-20 h-20 bg-white/5 border border-white/10 rounded-[24px] flex items-center justify-center text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500 group-hover:scale-110">
+                <Briefcase size={32} />
               </div>
               <div>
                 <div className="flex items-center gap-4 mb-3">
-                  <h4 className="text-xl font-black text-slate-900 tracking-tight">{job.title}</h4>
-                  <span className={`px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.2em] shadow-sm ${
-                    job.status === 'open' ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600'
+                  <h4 className="text-xl font-black text-white tracking-tight uppercase">{job.title}</h4>
+                  <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.3em] border ${
+                    job.status === 'open' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'
                   }`}>
                     {job.status}
                   </span>
                 </div>
-                <div className="flex flex-wrap gap-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
-                   <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg"><Clock size={14} className="text-indigo-400" /> {job.time}</div>
-                   <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg"><Users size={14} className="text-indigo-400" /> {job.applicants} Applicants</div>
-                   <div className="flex items-center gap-2 bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-lg underline">Budget: ${job.budget}</div>
+                <div className="flex flex-wrap gap-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                   <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2 rounded-full ring-1 ring-white/5"><Clock size={14} className="text-indigo-400" /> {job.time}</div>
+                   <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2 rounded-full ring-1 ring-white/5"><Users size={14} className="text-indigo-400" /> {job.applicants} Applicants</div>
+                   <div className="flex items-center gap-2 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-4 py-2 rounded-full">Budget: ${job.budget}</div>
                 </div>
               </div>
             </div>
 
             <div className="flex items-center gap-4 relative z-10">
-               <button className="px-8 py-3.5 bg-slate-900 text-white rounded-2xl hover:bg-indigo-600 font-black text-xs uppercase tracking-widest transition-all shadow-lg shadow-slate-200">
-                  Review Proposals
+               <button className="px-8 py-4 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-500 font-black text-[10px] uppercase tracking-widest transition-all shadow-2xl shadow-indigo-600/20">
+                 Review Proposals
                </button>
                <div className="flex items-center gap-2">
-                 <button className="p-3.5 bg-white border border-slate-100 text-slate-400 rounded-2xl hover:bg-slate-50 hover:text-indigo-600 transition-all shadow-sm">
+                 <button className="p-4 bg-white/5 border border-white/10 text-slate-500 rounded-2xl hover:bg-white/10 hover:text-indigo-400 transition-all ring-1 ring-white/5">
                     <Edit2 size={18} />
                  </button>
-                 <button className="p-3.5 bg-white border border-slate-100 text-slate-400 rounded-2xl hover:bg-red-50 hover:text-red-500 transition-all shadow-sm">
+                 <button className="p-4 bg-white/5 border border-white/10 text-slate-500 rounded-2xl hover:bg-rose-500/10 hover:text-rose-400 transition-all ring-1 ring-white/5">
                     <Trash2 size={18} />
                  </button>
                </div>
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
 
       {displayJobs.length === 0 && (
-        <div className="py-20 text-center bg-white rounded-3xl border-2 border-dashed border-slate-100">
-           <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
-             <AlertCircle size={32} className="text-slate-200" />
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="py-28 text-center bg-[#0c0f16]/40 backdrop-blur-3xl rounded-[60px] border-2 border-dashed border-white/5 ring-1 ring-white/5"
+        >
+           <div className="w-24 h-24 bg-white/5 border border-white/10 rounded-full flex items-center justify-center mx-auto mb-8">
+             <AlertCircle size={40} className="text-slate-700" />
            </div>
-           <h3 className="text-xl font-bold text-slate-900">No jobs posted yet.</h3>
-           <p className="text-slate-500 mb-6">Create your first job post to start finding amazing professionals.</p>
-        </div>
+           <h3 className="text-3xl font-black text-white uppercase tracking-tighter mb-4">No Deployed Nodes</h3>
+           <p className="text-slate-500 font-bold uppercase tracking-widest text-sm">Initialize your first job node to begin operator discovery.</p>
+        </motion.div>
       )}
     </div>
   );

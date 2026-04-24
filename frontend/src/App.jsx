@@ -15,10 +15,15 @@ export const ROLES = {
 import ProviderDashboard from './pages/provider/ProviderDashboard';
 import MyServices from './pages/provider/MyServices';
 import CreateService from './pages/provider/CreateService';
-import MyApplications from './pages/provider/MyApplications';
+import ProviderApplications from './pages/provider/ProviderApplications';
 import Orders from './pages/provider/Orders';
 import Reviews from './pages/provider/Reviews';
 import Earnings from './pages/provider/Earnings';
+
+// Dashboard Module Pages
+import DashboardSettings from './pages/dashboard/Settings';
+import DashboardNotifications from './pages/dashboard/Notifications';
+import DashboardActiveJobs from './pages/dashboard/ActiveJobs';
 
 // Client Pages (Restricted Experience)
 import LeaveReview from './pages/client/LeaveReview';
@@ -54,12 +59,15 @@ const freelancerRoutes = [
   { path: 'services',          element: <MyServices /> },         // /dashboard/provider/services
   { path: 'services/create',   element: <CreateService /> },      // /dashboard/provider/services/create
   { path: 'services/edit/:id', element: <CreateService /> },      // /dashboard/provider/services/edit/:id
-  { path: 'applications',      element: <MyApplications /> },     // /dashboard/provider/applications
+  { path: 'applications',      element: <ProviderApplications /> },     // /dashboard/provider/applications
   { path: 'orders',            element: <Orders /> },             // /dashboard/provider/orders
   { path: 'messages',          element: <ChatPage /> },           // /dashboard/provider/messages
   { path: 'reviews',           element: <Reviews /> },            // /dashboard/provider/reviews
   { path: 'earnings',          element: <Earnings /> },           // /dashboard/provider/earnings
   { path: 'profile',           element: <EditProfile /> },        // /dashboard/provider/profile
+  { path: 'active-jobs',       element: <DashboardActiveJobs /> }, // /dashboard/provider/active-jobs
+  { path: 'notifications',     element: <DashboardNotifications /> }, // /dashboard/provider/notifications
+  { path: 'settings',          element: <DashboardSettings /> },  // /dashboard/provider/settings
 ];
 
 const clientRoutes = [
@@ -71,7 +79,7 @@ const clientRoutes = [
 
 
 const MainLayout = ({ children }) => (
-  <div className="flex flex-col min-h-screen bg-white font-['Inter']">
+  <div className="flex flex-col min-h-screen bg-[#0b0e14] font-sans">
     <Navbar />
     <main className="flex-grow">
       {children}
@@ -86,7 +94,7 @@ const DashboardRedirect = () => {
   const { user, loading } = useAuth();
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50">
+    <div className="min-h-screen flex items-center justify-center bg-[#0b0e14]">
       <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
     </div>
   );

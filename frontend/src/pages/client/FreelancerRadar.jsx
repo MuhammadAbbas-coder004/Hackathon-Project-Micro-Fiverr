@@ -5,11 +5,11 @@ import L from 'leaflet';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import socket from '../../utils/socket';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   MapPin, Star, Send, Shield, X, Radio, Users,
   StopCircle, Zap, Activity, ShieldCheck, Search,
-  Navigation, ChevronRight, Signal, Wifi
+  Navigation, ChevronRight, ChevronLeft, Signal, Wifi
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -39,15 +39,15 @@ const freelancerMarker = (isSelected) => L.divIcon({
     <div style="position:relative;width:28px;height:28px;">
       <div style="
         width:28px;height:28px;
-        background:${isSelected ? '#f97316' : '#111111'};
+        background:${isSelected ? '#4f46e5' : '#0c0f16'};
         border-radius:50%;
-        border:3px solid ${isSelected ? '#f97316' : '#f97316'};
-        box-shadow: 0 0 ${isSelected ? '20px' : '10px'} rgba(249,115,22,${isSelected ? '0.8' : '0.4'});
+        border:3px solid ${isSelected ? '#4f46e5' : '#4f46e5'};
+        box-shadow: 0 0 ${isSelected ? '20px' : '10px'} rgba(79,70,229,${isSelected ? '0.8' : '0.4'});
         display:flex;align-items:center;justify-content:center;
       "></div>
       ${isSelected ? `<div style="
         position:absolute;inset:-8px;
-        border:2px solid rgba(249,115,22,0.3);
+        border:2px solid rgba(79,70,229,0.3);
         border-radius:50%;
         animation:radarPulse 1.5s ease-out infinite;
       "></div>` : ''}
@@ -71,27 +71,30 @@ const clientMarker = L.divIcon({
 
 /* ─── Loading Overlay ─── */
 const RadarLoader = () => (
-  <div className="h-screen w-full flex items-center justify-center bg-black">
+  <div className="h-screen w-full flex items-center justify-center bg-[#0b0e14]">
     <div className="flex flex-col items-center gap-8">
       {/* Radar animation */}
-      <div className="relative w-32 h-32">
-        <div className="absolute inset-0 rounded-full border border-orange-500/10" />
-        <div className="absolute inset-4 rounded-full border border-orange-500/20" />
-        <div className="absolute inset-8 rounded-full border border-orange-500/30" />
-        <div className="absolute inset-12 rounded-full bg-orange-500/10 flex items-center justify-center">
-          <Radio className="h-6 w-6 text-orange-500 animate-pulse" />
+      <div className="relative w-40 h-40">
+        <div className="absolute inset-0 rounded-full border border-indigo-500/10" />
+        <div className="absolute inset-6 rounded-full border border-indigo-500/20" />
+        <div className="absolute inset-12 rounded-full border border-indigo-500/30" />
+        <div className="absolute inset-16 rounded-full bg-indigo-600/10 flex items-center justify-center border border-indigo-500/20">
+          <Radio className="h-8 w-8 text-indigo-500 animate-pulse" />
         </div>
         {/* Sweep */}
         <div className="absolute inset-0 rounded-full overflow-hidden">
           <div
-            className="absolute top-1/2 left-1/2 h-16 w-[2px] bg-gradient-to-t from-orange-500/0 to-orange-500/80 origin-bottom"
-            style={{ animation: 'radarSweep 2s linear infinite' }}
+            className="absolute top-1/2 left-1/2 h-20 w-[3px] bg-gradient-to-t from-indigo-500/0 to-indigo-500/80 origin-bottom blur-[1px]"
+            style={{ animation: 'radarSweep 2.5s linear infinite' }}
           />
         </div>
       </div>
-      <div className="text-center space-y-2">
-        <p className="font-black text-white text-sm uppercase tracking-[0.4em]">Scanning Nearby Area</p>
-        <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Synchronizing GPS Matrix…</p>
+      <div className="text-center space-y-3">
+        <p className="font-black text-white text-base uppercase tracking-[0.6em]">Scanning Nearby Nodes</p>
+        <div className="flex items-center justify-center gap-3">
+           <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-ping" />
+           <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Synchronizing GPS Matrix…</p>
+        </div>
       </div>
     </div>
     <style>{`
@@ -109,41 +112,37 @@ const FreelancerListItem = ({ freelancer, isSelected, onClick }) => {
       animate={{ opacity: 1, x: 0 }}
       onClick={onClick}
       className={cn(
-        "flex items-center gap-4 p-4 rounded-2xl cursor-pointer transition-all duration-300 group relative",
+        "flex items-center gap-4 p-5 rounded-[24px] cursor-pointer transition-all duration-500 group relative",
         isSelected
-          ? "bg-orange-500/10 border border-orange-500/30"
+          ? "bg-indigo-600/10 border border-indigo-500/30 ring-1 ring-white/5"
           : "border border-transparent hover:bg-white/5 hover:border-white/5"
       )}
     >
       <div className="relative shrink-0">
-        <Avatar className="h-12 w-12 rounded-xl border border-orange-500/20 shadow-lg">
-          <AvatarImage src={`https://ui-avatars.com/api/?name=${freelancer.name}&background=f97316&color=000`} />
-          <AvatarFallback className="bg-zinc-900 text-orange-500 font-black text-sm">{initials}</AvatarFallback>
-        </Avatar>
-        <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 border-2 border-zinc-950 rounded-full" />
+        <div className="h-14 w-14 rounded-2xl bg-[#0c0f16] flex items-center justify-center font-black text-white border border-white/10 shadow-2xl group-hover:border-indigo-500/40 transition-all">
+          {initials}
+        </div>
+        <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-emerald-500 border-4 border-[#0c0f16] rounded-full" />
       </div>
 
       <div className="flex-1 min-w-0">
-        <p className={cn("font-black text-sm uppercase tracking-tight leading-none truncate mb-2",
-          isSelected ? "text-orange-500" : "text-white group-hover:text-white")}
+        <p className={cn("font-black text-[13px] uppercase tracking-tight leading-none truncate mb-2.5 transition-colors",
+          isSelected ? "text-indigo-400" : "text-white group-hover:text-indigo-400")}
         >
           {freelancer.name}
         </p>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1">
-            <Star className="h-3 w-3 fill-orange-500 text-orange-500" />
-            <span className="text-[10px] font-bold text-zinc-500">{freelancer.rating || '5.0'}</span>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 bg-black/40 px-2 py-0.5 rounded-md border border-white/5">
+            <Star className="h-3 w-3 fill-indigo-500 text-indigo-500" />
+            <span className="text-[10px] font-black text-slate-300">{freelancer.rating || '5.0'}</span>
           </div>
           {freelancer.location && (
-            <>
-              <div className="w-1 h-1 rounded-full bg-zinc-800" />
-              <span className="text-[10px] font-bold text-zinc-600 truncate">{freelancer.location}</span>
-            </>
+            <span className="text-[9px] font-black text-slate-600 truncate uppercase tracking-widest">{freelancer.location}</span>
           )}
         </div>
       </div>
 
-      <ChevronRight size={16} className={cn("shrink-0 transition-all", isSelected ? "text-orange-500" : "text-zinc-700 group-hover:text-zinc-400")} />
+      <ChevronRight size={18} className={cn("shrink-0 transition-all duration-500", isSelected ? "text-indigo-500 translate-x-1" : "text-slate-800 group-hover:text-indigo-400 group-hover:translate-x-1")} />
     </motion.div>
   );
 };
@@ -155,82 +154,71 @@ const FreelancerDetailPanel = ({ selected, sharing, onStartSharing, onStopSharin
   return (
     <AnimatePresence>
       <motion.div
-        initial={{ y: 60, opacity: 0 }}
+        initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        exit={{ y: 60, opacity: 0 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        className="absolute bottom-8 left-8 right-8 z-[2000] max-w-xl mx-auto"
+        exit={{ y: 100, opacity: 0 }}
+        transition={{ type: 'spring', stiffness: 200, damping: 25 }}
+        className="absolute bottom-12 left-0 right-0 z-[2000] px-6"
       >
-        <div className="bg-zinc-950/95 backdrop-blur-3xl border border-white/10 shadow-[0_50px_120px_rgba(0,0,0,0.9)] rounded-[2.5rem] relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-48 h-48 bg-orange-600/10 blur-[60px] rounded-full pointer-events-none" />
+        <div className="max-w-xl mx-auto bg-[#0c0f16]/90 backdrop-blur-3xl border border-white/10 shadow-[0_50px_150px_rgba(0,0,0,1)] rounded-[48px] relative overflow-hidden ring-1 ring-white/5">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/10 blur-[80px] rounded-full pointer-events-none" />
           
-          {/* Close */}
           <button
             onClick={onClose}
-            className="absolute top-6 right-6 z-10 w-10 h-10 rounded-2xl bg-white/5 hover:bg-orange-500/20 hover:text-orange-500 text-zinc-500 flex items-center justify-center transition-all active:scale-90"
+            className="absolute top-8 right-8 z-10 w-12 h-12 rounded-full bg-white/5 hover:bg-indigo-600/20 hover:text-indigo-500 text-slate-500 flex items-center justify-center transition-all active:scale-90 border border-white/10"
           >
-            <X size={18} />
+            <X size={20} />
           </button>
 
-          <div className="p-8 space-y-6 relative z-10">
-            {/* Profile */}
-            <div className="flex items-center gap-6 pr-12">
+          <div className="p-10 space-y-8 relative z-10">
+            <div className="flex items-center gap-8">
               <div className="relative">
-                <Avatar className="h-20 w-20 rounded-2xl border-2 border-orange-500/30 shadow-2xl">
-                  <AvatarImage src={`https://ui-avatars.com/api/?name=${selected.name}&background=f97316&color=000`} />
-                  <AvatarFallback className="bg-zinc-900 text-orange-500 font-black text-2xl">{initials}</AvatarFallback>
-                </Avatar>
-                <span className="absolute -bottom-1 -right-1 flex h-5 w-5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex h-5 w-5 rounded-full bg-emerald-500 border-4 border-zinc-950" />
-                </span>
+                <div className="h-24 w-24 rounded-3xl bg-indigo-600 flex items-center justify-center font-black text-white text-3xl border-2 border-indigo-500/30 shadow-2xl">
+                  {initials}
+                </div>
+                <div className="absolute -bottom-2 -right-2 w-7 h-7 bg-emerald-500 border-4 border-[#0c0f16] rounded-full flex items-center justify-center">
+                   <div className="w-1.5 h-1.5 bg-white rounded-full animate-ping" />
+                </div>
               </div>
-              <div className="space-y-2">
-                <h3 className="font-black text-white text-2xl uppercase tracking-tighter leading-none">{selected.name}</h3>
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1.5 bg-zinc-900 border border-white/5 px-3 py-1 rounded-full">
-                    <Star className="h-3.5 w-3.5 fill-orange-500 text-orange-500" />
-                    <span className="text-xs font-black text-white">{selected.rating || '5.0'}</span>
+              <div className="space-y-3">
+                <h3 className="font-black text-white text-3xl uppercase tracking-tighter leading-none">{selected.name}</h3>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2 bg-indigo-600/10 border border-indigo-500/20 px-4 py-1.5 rounded-full backdrop-blur-xl">
+                    <Star className="h-4 w-4 fill-indigo-500 text-indigo-500" />
+                    <span className="text-sm font-black text-white">{selected.rating || '5.0'}</span>
                   </div>
                   {selected.location && (
-                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-wider">{selected.location}</span>
+                    <span className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em]">{selected.location}</span>
                   )}
                 </div>
               </div>
             </div>
 
             {selected.bio && (
-              <p className="text-sm text-zinc-400 leading-relaxed border-l-4 border-orange-500/40 bg-orange-500/5 px-5 py-4 rounded-r-2xl italic">
+              <p className="text-[13px] text-slate-400 leading-relaxed border-l-4 border-indigo-500 bg-indigo-600/5 px-6 py-5 rounded-r-[24px] font-medium">
                 "{selected.bio}"
               </p>
             )}
 
-            {/* Actions */}
-            <div className="space-y-3">
+            <div className="space-y-4 pt-2">
               {sharing ? (
                 <button
                   onClick={onStopSharing}
-                  className="w-full h-14 bg-red-600/20 hover:bg-red-600 text-red-500 hover:text-white font-black uppercase tracking-[0.2em] text-xs rounded-2xl transition-all border border-red-500/30 flex items-center justify-center gap-3 active:scale-95"
+                  className="w-full h-16 bg-rose-600/20 hover:bg-rose-600 text-rose-500 hover:text-white font-black uppercase tracking-[0.4em] text-[11px] rounded-[24px] transition-all border border-rose-500/30 flex items-center justify-center gap-4 active:scale-95 shadow-2xl shadow-rose-900/20"
                 >
-                  <StopCircle size={18} /> Terminate Signal
+                  <StopCircle size={20} /> Terminate Broadcast
                 </button>
               ) : (
                 <button
                   onClick={onStartSharing}
-                  className="w-full h-14 bg-orange-500 hover:bg-white text-black font-black uppercase tracking-[0.2em] text-xs rounded-2xl transition-all shadow-[0_20px_40px_rgba(249,115,22,0.3)] flex items-center justify-center gap-3 active:scale-95"
+                  className="w-full h-16 bg-white hover:bg-indigo-600 text-black hover:text-white font-black uppercase tracking-[0.4em] text-[11px] rounded-[24px] transition-all shadow-2xl shadow-indigo-600/30 flex items-center justify-center gap-4 active:scale-95"
                 >
-                  <Send size={18} /> Broadcast Live Location
+                  <Send size={20} /> Initialize Signal Sync
                 </button>
               )}
-              {sharing && (
-                <div className="flex items-center justify-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Live link active — encrypted</span>
-                </div>
-              )}
-              <div className="flex items-center justify-center gap-2 pt-1">
-                <ShieldCheck size={14} className="text-zinc-700" />
-                <span className="text-[9px] font-bold text-zinc-700 uppercase tracking-widest">End-to-end encrypted</span>
+              <div className="flex items-center justify-center gap-3 pt-2">
+                <ShieldCheck size={16} className="text-indigo-500/40" />
+                <span className="text-[10px] font-black text-slate-700 uppercase tracking-[0.3em]">Protocol Matrix Secured v2.4</span>
               </div>
             </div>
           </div>
@@ -240,9 +228,9 @@ const FreelancerDetailPanel = ({ selected, sharing, onStartSharing, onStopSharin
   );
 };
 
-/* ─── Main Component ─── */
 const FreelancerRadar = () => {
   const { user, token }     = useAuth();
+  const navigate            = useNavigate();
   const routerLocation      = useLocation();
   const [myPos, setMyPos]   = useState(null);
   const [freelancers, setFreelancers] = useState([]);
@@ -316,74 +304,85 @@ const FreelancerRadar = () => {
   if (loading) return <RadarLoader />;
 
   return (
-    <div className="h-screen w-full flex overflow-hidden bg-black selection:bg-orange-500 selection:text-black">
-
+    <div className="h-screen w-full flex overflow-hidden bg-[#0b0e14] selection:bg-indigo-600 selection:text-white relative font-sans">
+      
       {/* ── LEFT SIDEBAR ── */}
       <AnimatePresence>
         {sidebarOpen && (
           <motion.aside
-            initial={{ x: -320, opacity: 0 }}
+            initial={{ x: -380, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
-            exit={{ x: -320, opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 280, damping: 30 }}
-            className="w-[340px] shrink-0 bg-zinc-950 border-r border-zinc-900 flex flex-col z-[500] relative overflow-hidden"
+            exit={{ x: -380, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 200, damping: 25 }}
+            className="w-[400px] shrink-0 bg-[#0c0f16]/80 backdrop-blur-3xl border-r border-white/10 flex flex-col z-[500] relative overflow-hidden ring-1 ring-white/5"
           >
-            {/* Glow */}
-            <div className="absolute top-0 left-0 w-48 h-48 bg-orange-600/5 blur-[80px] rounded-full pointer-events-none" />
+            {/* Background Glow */}
+            <div className="absolute top-0 left-0 w-64 h-64 bg-indigo-600/10 blur-[100px] rounded-full pointer-events-none" />
 
             {/* Header */}
-            <div className="p-6 pb-4 border-b border-zinc-900 relative z-10">
-              <div className="flex items-center justify-between mb-6">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-3">
-                    <div className="relative flex h-2.5 w-2.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75" />
-                      <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-orange-500" />
-                    </div>
-                    <h1 className="text-xs font-black text-white uppercase tracking-[0.3em]">Radar HUD</h1>
-                  </div>
-                  <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest pl-5">Live Node Registry</p>
+            <div className="p-10 pb-8 border-b border-white/5 relative z-10">
+              
+              {/* Back to Home Button */}
+              <button 
+                onClick={() => navigate('/')}
+                className="mb-10 flex items-center gap-3 text-slate-500 hover:text-white transition-all group"
+              >
+                <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-indigo-600 group-hover:border-indigo-500 transition-all">
+                   <ChevronLeft size={20} />
                 </div>
-                <div className="flex items-center gap-2 bg-zinc-900/50 border border-white/5 px-3 py-2 rounded-xl">
-                  <Signal size={12} className="text-orange-500" />
-                  <span className="text-[10px] font-black text-zinc-400">{freelancers.length} Active</span>
+                <span className="text-[10px] font-black uppercase tracking-[0.4em]">Back to Nexus</span>
+              </button>
+
+              <div className="flex items-center justify-between mb-10">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3">
+                    <div className="relative flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75" />
+                      <span className="relative inline-flex h-3 w-3 rounded-full bg-indigo-500" />
+                    </div>
+                    <h1 className="text-[12px] font-black text-white uppercase tracking-[0.5em]">Radar Matrix</h1>
+                  </div>
+                  <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] pl-6 leading-none">Scanning active nodes...</p>
+                </div>
+                <div className="bg-indigo-600/10 border border-indigo-500/20 px-4 py-2 rounded-2xl">
+                  <Signal size={14} className="text-indigo-500" />
                 </div>
               </div>
 
               {/* Search */}
               <div className="relative">
-                <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" />
+                <Search size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-600" />
                 <input
                   type="text"
                   value={searchQ}
                   onChange={e => setSearchQ(e.target.value)}
-                  placeholder="Search freelancers..."
-                  className="w-full pl-10 pr-4 py-3 bg-zinc-900/50 border border-white/5 rounded-2xl text-sm text-white placeholder:text-zinc-700 outline-none focus:border-orange-500/30 transition-all font-medium"
+                  placeholder="IDENTIFY NODE..."
+                  className="w-full pl-14 pr-6 py-5 bg-white/5 border border-white/10 rounded-[24px] text-[11px] font-black text-white placeholder:text-slate-800 outline-none focus:border-indigo-500/40 transition-all uppercase tracking-[0.2em] ring-1 ring-white/5 shadow-2xl"
                 />
               </div>
             </div>
 
             {/* Stats row */}
-            <div className="px-6 py-4 grid grid-cols-3 gap-2 border-b border-zinc-900">
+            <div className="px-10 py-8 grid grid-cols-3 gap-4 border-b border-white/5">
               {[
-                { label: 'Nearby', value: freelancers.length, accent: false },
-                { label: 'Radius', value: '10 KM', accent: true },
-                { label: 'Online', value: freelancers.length, accent: false },
+                { label: 'NODES', value: freelancers.length, accent: false },
+                { label: 'RANGE', value: '15KM', accent: true },
+                { label: 'SYNC', value: 'PRO', accent: false },
               ].map(s => (
-                <div key={s.label} className="bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2.5 text-center">
-                  <p className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.2em] mb-1">{s.label}</p>
-                  <p className={cn("text-lg font-black leading-none", s.accent ? "text-orange-500" : "text-white")}>{s.value}</p>
+                <div key={s.label} className="bg-white/5 border border-white/5 rounded-[20px] px-4 py-4 text-center ring-1 ring-white/5">
+                  <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1">{s.label}</p>
+                  <p className={cn("text-lg font-black leading-none", s.accent ? "text-indigo-500" : "text-white")}>{s.value}</p>
                 </div>
               ))}
             </div>
 
             {/* Freelancer List */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-2" style={{ scrollbarWidth: 'thin', scrollbarColor: '#27272a transparent' }}>
+            <div className="flex-1 overflow-y-auto p-6 space-y-3 no-scrollbar">
               {filtered.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full gap-4 opacity-30 py-20">
-                  <Radio size={40} className="text-zinc-600" />
-                  <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest text-center">
-                    {searchQ ? 'No results found' : 'Zero signals in range'}
+                <div className="flex flex-col items-center justify-center h-full gap-6 opacity-20 py-20">
+                  <Radio size={48} className="text-slate-600" />
+                  <p className="text-[11px] font-black text-slate-600 uppercase tracking-[0.4em] text-center leading-relaxed">
+                    Zero signal detected <br /> in current radius
                   </p>
                 </div>
               ) : (
@@ -399,14 +398,11 @@ const FreelancerRadar = () => {
             </div>
 
             {/* Footer */}
-            <div className="p-5 border-t border-zinc-900">
-              <Link
-                to="/"
-                className="flex items-center justify-center gap-3 text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em] hover:text-orange-500 transition-colors"
-              >
-                <Zap size={14} />
-                Back to Command Center
-              </Link>
+            <div className="p-10 border-t border-white/5 bg-black/20">
+              <div className="flex items-center justify-center gap-2">
+                 <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse" />
+                 <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em]">Nexus Network v2.4.9</p>
+              </div>
             </div>
           </motion.aside>
         )}
@@ -418,30 +414,30 @@ const FreelancerRadar = () => {
         {/* Sidebar toggle button */}
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="absolute top-6 left-6 z-[1000] flex items-center gap-2.5 bg-zinc-900/90 backdrop-blur-xl border border-white/5 hover:border-orange-500/30 px-4 py-3 rounded-2xl text-zinc-400 hover:text-orange-500 transition-all shadow-2xl"
+          className="absolute top-10 left-10 z-[1000] flex items-center gap-4 bg-[#0c0f16]/95 backdrop-blur-3xl border border-white/10 hover:border-indigo-500/50 px-6 py-4 rounded-[24px] text-slate-400 hover:text-white transition-all shadow-[0_30px_60px_rgba(0,0,0,0.5)] ring-1 ring-white/10"
         >
           {sidebarOpen
-            ? <><X size={16} /><span className="text-[10px] font-black uppercase tracking-[0.2em]">Close Panel</span></>
-            : <><Radio size={16} /><span className="text-[10px] font-black uppercase tracking-[0.2em]">Open Radar</span></>
+            ? <><X size={18} /><span className="text-[11px] font-black uppercase tracking-[0.3em]">HidE Intelligence</span></>
+            : <><Radio size={18} className="text-indigo-500" /><span className="text-[11px] font-black uppercase tracking-[0.3em]">Show Radar</span></>
           }
         </button>
 
         {/* Top-right status bar */}
-        <div className="absolute top-6 right-6 z-[1000] flex items-center gap-3">
+        <div className="absolute top-10 right-10 z-[1000] flex flex-col gap-4 items-end">
+          <div className="flex items-center gap-4 bg-[#0c0f16]/95 backdrop-blur-3xl border border-white/10 px-6 py-4 rounded-[24px] shadow-[0_30px_60px_rgba(0,0,0,0.5)] ring-1 ring-white/10">
+            <Wifi size={16} className="text-indigo-500 animate-pulse" />
+            <span className="text-[11px] font-black text-white uppercase tracking-[0.2em] leading-none">{freelancers.length} Active Nodes detected</span>
+          </div>
           {sharing && (
             <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 backdrop-blur-xl px-4 py-2.5 rounded-2xl"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/30 backdrop-blur-3xl px-6 py-4 rounded-[24px] shadow-2xl ring-1 ring-white/10"
             >
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">LIVE SIGNAL ACTIVE</span>
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[11px] font-black text-emerald-500 uppercase tracking-widest leading-none">Broadcast active</span>
             </motion.div>
           )}
-          <div className="flex items-center gap-2 bg-zinc-900/90 backdrop-blur-xl border border-white/5 px-4 py-2.5 rounded-2xl shadow-2xl">
-            <Wifi size={14} className="text-orange-500 animate-pulse" />
-            <span className="text-[10px] font-black text-white uppercase tracking-widest">{freelancers.length} Nodes</span>
-          </div>
         </div>
 
         {/* Leaflet Map */}
@@ -460,7 +456,7 @@ const FreelancerRadar = () => {
           {myPos && (
             <Marker position={[myPos.lat, myPos.lng]} icon={clientMarker}>
               <Popup>
-                <div className="text-xs font-bold text-zinc-900 p-1">📍 You are here</div>
+                <div className="text-[10px] font-black text-indigo-500 p-3 uppercase tracking-[0.2em] bg-[#0c0f16]">📍 Deployment Node (YOU)</div>
               </Popup>
             </Marker>
           )}
@@ -473,15 +469,15 @@ const FreelancerRadar = () => {
               eventHandlers={{ click: () => handleSelect(f) }}
             >
               <Popup>
-                <div className="flex items-center gap-3 p-1.5 min-w-[160px]">
-                  <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-500 text-xs font-black border border-orange-500/20 shrink-0">
+                <div className="flex items-center gap-5 p-4 min-w-[200px] bg-[#0c0f16]/95">
+                  <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 flex items-center justify-center text-indigo-400 text-lg font-black border border-indigo-500/30 shrink-0 shadow-2xl">
                     {f.name?.charAt(0)}
                   </div>
                   <div>
-                    <p className="font-bold text-xs text-zinc-900 leading-tight">{f.name}</p>
-                    <div className="flex items-center gap-1 mt-0.5">
-                      <Star className="h-2.5 w-2.5 fill-orange-500 text-orange-500" />
-                      <span className="text-[10px] text-zinc-500">{f.rating || '5.0'}</span>
+                    <p className="font-black text-sm text-white leading-tight uppercase tracking-tight mb-1.5">{f.name}</p>
+                    <div className="flex items-center gap-2">
+                      <Star className="h-3 w-3 fill-indigo-500 text-indigo-500" />
+                      <span className="text-[11px] font-black text-slate-500 leading-none">{f.rating || '5.0'}</span>
                     </div>
                   </div>
                 </div>
@@ -500,46 +496,42 @@ const FreelancerRadar = () => {
             onClose={() => { setSelected(null); stopSharing(); }}
           />
         )}
-
-        {/* Empty state */}
-        {!loading && freelancers.length === 0 && !selected && (
-          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-[1000]">
-            <div className="flex items-center gap-3 bg-zinc-900/90 backdrop-blur-3xl border border-white/5 rounded-2xl px-8 py-5 shadow-2xl">
-              <Radio className="h-5 w-5 text-orange-500 animate-pulse" />
-              <span className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.3em]">No active nodes detected in range</span>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Global styles */}
       <style>{`
-        .leaflet-container { background: #09090b !important; }
+        .leaflet-container { background: #0b0e14 !important; }
         .leaflet-popup-content-wrapper {
-          background: rgba(9,9,11,0.95) !important;
-          border: 1px solid rgba(255,255,255,0.08) !important;
-          border-radius: 16px !important;
-          box-shadow: 0 30px 60px rgba(0,0,0,0.8) !important;
+          background: rgba(12,15,22,0.98) !important;
+          border: 1px solid rgba(255,255,255,0.15) !important;
+          border-radius: 32px !important;
+          box-shadow: 0 50px 100px rgba(0,0,0,0.9) !important;
           padding: 0 !important;
+          backdrop-filter: blur(30px);
         }
         .leaflet-popup-content { margin: 0 !important; }
         .leaflet-popup-tip-container { display: none !important; }
         .leaflet-control-zoom {
-          border: 1px solid rgba(255,255,255,0.05) !important;
-          border-radius: 12px !important;
+          border: 1px solid rgba(255,255,255,0.1) !important;
+          border-radius: 20px !important;
           overflow: hidden !important;
-          margin: 90px 16px !important;
-          background: rgba(9,9,11,0.9) !important;
+          margin: 140px 40px !important;
+          background: rgba(12,15,22,0.95) !important;
+          box-shadow: 0 30px 60px rgba(0,0,0,0.8) !important;
         }
         .leaflet-control-zoom a {
           background: transparent !important;
-          color: #71717a !important;
+          color: #475569 !important;
           border-bottom: 1px solid rgba(255,255,255,0.05) !important;
-          transition: color 0.2s, background 0.2s !important;
+          transition: all 0.4s !important;
+          height: 44px !important;
+          width: 44px !important;
+          line-height: 44px !important;
+          font-size: 18px !important;
         }
         .leaflet-control-zoom a:hover { 
-          background: rgba(249,115,22,0.1) !important; 
-          color: #f97316 !important;
+          background: rgba(79,70,229,0.2) !important; 
+          color: #818cf8 !important;
         }
         @keyframes radarPulse {
           0%   { transform: scale(1); opacity: 0.6; }

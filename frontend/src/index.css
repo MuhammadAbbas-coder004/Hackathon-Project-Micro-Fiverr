@@ -37,21 +37,32 @@
 }
 
 * {
-  border-color: #e2e8f0;
+  border-color: transparent;
 }
 
 html, body {
   height: auto;
   min-height: 100%;
+  margin: 0;
+  padding: 0;
   overflow-x: hidden;
-  overflow-y: auto !important;
   scroll-behavior: smooth;
+  background-color: #0b0e14;
+  user-select: none; /* Prevents text selection globally */
 }
 
 body {
   font-family: var(--font-sans);
-  background-color: white;
-  color: #0f172a;
+  background-color: #0b0e14;
+  color: #f8fafc;
+}
+
+/* Ensure interactive elements show pointer cursor */
+button, 
+a, 
+[role="button"],
+.cursor-pointer {
+  cursor: pointer !important;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -93,4 +104,30 @@ h1, h2, h3, h4, h5, h6 {
   0% { transform: translateY(0px); }
   50% { transform: translateY(-10px); }
   100% { transform: translateY(0px); }
+}
+
+/* ── Custom Scrollbar (GPT Style) ── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
 }

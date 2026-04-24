@@ -1,363 +1,249 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-
-import { Button } from '@/components/ui/Button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/Badge';
-import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Outlet, NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
-  DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-
-// ── react-icons replace lucide ──
-import {
-  MdDashboard,
-  MdWork,
-  MdShoppingBag,
-  MdChat,
-  MdStar,
-  MdAccountBalanceWallet,
-  MdSettings,
-  MdLogout,
-  MdNotifications,
-  MdMenu,
-  MdChevronRight,
-  MdPerson,
-  MdHelpOutline,
-  MdKeyboardArrowLeft,
-  MdSearch,
-  MdFormatListBulleted,
-  MdAccessTime,
-  MdAddCircleOutline,
-  MdTrendingUp,
+  MdDashboard, MdWork, MdChat, MdStar,
+  MdAccountBalanceWallet, MdSettings, MdLogout, MdNotifications,
+  MdPerson, MdFormatListBulleted, MdAccessTime,
+  MdMoreHoriz, MdSearch, MdMenu, MdLanguage, MdMailOutline, MdChevronLeft, MdChevronRight, MdClose, MdPlayArrow
 } from 'react-icons/md';
-import { Zap, PanelLeft, PanelLeftClose } from 'lucide-react';
-import { motion } from 'framer-motion';
+import {
+  Zap, Home, BarChart2, Layers, Send, User, Folder,
+  Settings, LogOut, ChevronLeft, Plus, CloudUpload, PieChart,
+  LayoutGrid, CreditCard, Wallet, Activity, ArrowUpRight,
+  Moon, Grid, Mail, MessageSquare, Box, Briefcase, DollarSign, Rocket
+} from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
-const navGroups = {
-  freelancer: [
-    { 
-      label: 'Main', 
-      items: [
-        { label: 'Overview',    Icon: MdDashboard,            href: '/dashboard/provider' },
-        { label: 'My Services', Icon: MdStar,                 href: '/dashboard/provider/services', badge: '3' },
-        { label: 'Applications', Icon: MdFormatListBulleted,  href: '/dashboard/provider/applications', badge: '5' },
-        { label: 'Active Jobs',  Icon: MdAccessTime,          href: '/dashboard/provider/active', badge: '2' },
-      ]
-    },
-    {
-      label: 'Work',
-      items: [
-        { label: 'Post a Job',      Icon: MdAddCircleOutline,   href: '/dashboard/provider/services/create' },
-        { label: 'My Posted Jobs',  Icon: MdWork,               href: '/dashboard/provider/jobs' },
-        { label: 'Chat',            Icon: MdChat,               href: '/dashboard/provider/messages', badge: '3', badgeRed: true },
-      ]
-    },
-    {
-      label: 'Account',
-      items: [
-        { label: 'Reviews',         Icon: MdStar,               href: '/dashboard/provider/reviews' },
-        { label: 'Notifications',   Icon: MdNotifications,      href: '/dashboard/provider/notifications' },
-        { label: 'Settings',        Icon: MdSettings,           href: '/dashboard/provider/settings' },
-      ]
-    }
-  ],
-  customer: [
-    { 
-      label: 'Main', 
-      items: [
-        { label: 'Overview',   Icon: MdDashboard,            href: '/dashboard' },
-        { label: 'Browse',     Icon: MdShoppingBag,          href: '/dashboard/browse' },
-        { label: 'My Orders',  Icon: MdWork,                 href: '/dashboard/orders' },
-      ]
-    },
-    {
-      label: 'Account',
-      items: [
-        { label: 'Messages',   Icon: MdChat,                 href: '/dashboard/messages', badge: 1 },
-        { label: 'Favourites', Icon: MdStar,                 href: '/dashboard/favourites' },
-        { label: 'Wallet',     Icon: MdAccountBalanceWallet, href: '/dashboard/wallet' },
-      ]
-    }
-  ]
+const cn = (...classes) => classes.filter(Boolean).join(' ');
+
+/* ─── Nav Configuration ──────────────────────────────────────── */
+const navConfig = {
+  freelancer: {
+    groups: [
+      {
+        label: 'Nexus',
+        items: [
+          { label: 'Overview',     href: '/dashboard/provider',              Icon: LayoutGrid, color: 'text-indigo-400', bg: 'bg-indigo-500/20' },
+          { label: 'Earnings',     href: '/dashboard/provider/reviews',      Icon: DollarSign, color: 'text-emerald-400', bg: 'bg-emerald-500/20' },
+          { label: 'Identity',     href: '/dashboard/provider/settings',     Icon: User, color: 'text-amber-400', bg: 'bg-amber-500/20' },
+        ],
+      },
+      {
+        label: 'Workforce',
+        items: [
+          { label: 'My Gigs',      href: '/dashboard/provider/services',     Icon: Box, badge: '8', color: 'text-indigo-400', bg: 'bg-indigo-500/20' },
+          { label: 'Proposals',    href: '/dashboard/provider/applications', Icon: Send, color: 'text-sky-400', bg: 'bg-sky-500/20' },
+          { label: 'Active Jobs',  href: '/dashboard/provider/active-jobs',  Icon: Briefcase, color: 'text-amber-400', bg: 'bg-amber-500/20' },
+          { label: 'Live Chat',    href: '/chat',                            Icon: MessageSquare, badge: '4', color: 'text-pink-400', bg: 'bg-pink-500/20' },
+        ],
+      },
+    ],
+  },
+  customer: {
+    groups: [
+      {
+        label: 'Main',
+        items: [
+          { label: 'Dashboard', href: '/dashboard',           Icon: LayoutGrid, color: 'text-indigo-400', bg: 'bg-indigo-500/20' },
+          { label: 'Browse',    href: '/dashboard/browse',    Icon: Rocket, color: 'text-emerald-400', bg: 'bg-emerald-500/20' },
+        ],
+      },
+      {
+        label: 'Work',
+        items: [
+          { label: 'Orders',    href: '/dashboard/orders',    Icon: Briefcase, color: 'text-indigo-400', bg: 'bg-indigo-500/20' },
+          { label: 'Messages',  href: '/dashboard/messages',   Icon: MessageSquare, badge: '2', color: 'text-pink-400', bg: 'bg-pink-500/20' },
+        ],
+      },
+    ],
+  },
 };
 
-/* ─────────────────────────────────────────
-   Single nav item
-───────────────────────────────────────── */
-const NavItem = ({ item, collapsed }) => {
-  const { Icon } = item;
+const SidebarContent = ({ user, groups, collapsed }) => {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
+
+  const isActive = (href) => {
+    if (href === '/dashboard/provider' || href === '/dashboard') {
+      return location.pathname === href;
+    }
+    return location.pathname.startsWith(href);
+  };
 
   return (
-    <TooltipProvider delayDuration={0}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <NavLink
-            to={item.href}
-            end={item.href === '/dashboard' || item.href === '/dashboard/provider'}
-            className={({ isActive }) =>
-              `group flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 mb-1
-               ${isActive
-                 ? 'bg-[#f97316]/20 text-[#f97316]'
-                 : 'text-white/60 hover:text-white hover:bg-white/5'
-               }
-               ${collapsed ? 'justify-center px-2' : ''}
-              `
-            }
-          >
-            <Icon size={17} className={`shrink-0 ${item.badgeRed ? 'text-red-500' : ''}`} />
-            {!collapsed && (
-              <>
-                <span className="flex-1 truncate leading-none">{item.label}</span>
-                {item.badge && (
-                  <Badge className={`h-4 min-w-4 px-1.5 text-[9px] leading-none border-none
-                    ${item.badgeRed ? 'bg-red-500/20 text-red-500' : 'bg-[#f97316]/20 text-[#f97316]'}`}>
-                    {item.badge}
-                  </Badge>
-                )}
-              </>
-            )}
-          </NavLink>
-        </TooltipTrigger>
-        {collapsed && (
-          <TooltipContent side="right" className="flex items-center gap-2">
-            {item.label}
-            {item.badge && (
-              <Badge className="h-4 px-1 text-[10px] bg-orange-500 hover:bg-orange-500">
-                {item.badge}
-              </Badge>
-            )}
-          </TooltipContent>
-        )}
-      </Tooltip>
-    </TooltipProvider>
-  );
-};
-
-/* ─────────────────────────────────────────
-   Sidebar content
-───────────────────────────────────────── */
-const SidebarContent = ({ user, navItems, collapsed, onLogout, onToggle }) => {
-  const isFreelancer = user?.role === 'freelancer';
-  const initials = user?.name
-    ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-    : 'U';
-
-  return (
-    <div className="flex flex-col h-full">
-
-      {/* Official Website Logo Section */}
-      <div className={`p-6 pb-2 flex items-center justify-between gap-3 ${collapsed ? 'justify-center px-2' : ''}`}>
-        <div className="flex items-center gap-3 overflow-hidden">
-          <div className="relative w-8 h-8 flex items-center justify-center shrink-0">
+    <div className="h-full flex flex-col bg-[#0a0a0a]">
+      {/* ── Logo Area ── */}
+      <div className="h-[70px] sm:h-[100px] flex items-center px-4 sm:px-5 shrink-0 relative">
+        <Link to={user?.role === 'freelancer' ? "/dashboard/provider" : "/"} className="flex items-center gap-2 sm:gap-3 group outline-none overflow-hidden whitespace-nowrap w-full">
+          <div className="relative w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center shrink-0">
             <motion.div 
               animate={{ rotate: [0, 10, 0] }}
               transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute inset-0 bg-orange-500 rounded-lg blur-[2px] opacity-20" 
+              className="absolute inset-0 bg-indigo-500 rounded-lg blur-[4px] opacity-20" 
             />
-            <Zap className="relative h-6 w-6 text-orange-500 fill-orange-500/20" />
+            <Zap className="relative h-5 w-5 sm:h-6 sm:w-6 text-indigo-500 fill-indigo-500/20" />
           </div>
           {!collapsed && (
-            <div className="flex flex-col leading-none">
-              <span className="text-[15px] font-black tracking-tighter text-white uppercase">
-                Micro<span className="text-[#f97316]">Fiverr</span>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col leading-none">
+              <span className="text-[16px] sm:text-[20px] font-extrabold tracking-tight text-white uppercase">
+                MICRO<span className="text-indigo-500 font-black">FIVERR</span>
               </span>
-              <span className="text-[6px] font-bold text-white/20 uppercase tracking-[0.2em] mt-0.5">Nexus_Network</span>
-            </div>
+            </motion.div>
           )}
-        </div>
-
-        {/* Sidebar Internal Toggle */}
-        {!collapsed && (
-          <button
-            onClick={onToggle}
-            className="p-1.5 text-zinc-500 hover:text-white hover:bg-white/5 rounded-lg transition-all"
-            title="Close sidebar"
-          >
-            <PanelLeftClose size={18} />
-          </button>
-        )}
+        </Link>
       </div>
 
-      {/* User Status Section */}
-      <div className={`px-6 py-4 flex items-center gap-4 ${collapsed ? 'justify-center px-2' : ''}`}>
-        <div className="relative shrink-0">
-          <div className="absolute -inset-1 blur-sm bg-gradient-to-r from-[#f97316] to-orange-400 opacity-20" />
-          <Avatar className="h-[38px] w-[38px] rounded-xl relative ring-1 ring-white/10">
-            <AvatarImage src={user?.avatar} />
-            <AvatarFallback className="text-[12px] bg-white/5 text-white font-bold uppercase">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
-        </div>
-        {!collapsed && (
-          <div className="flex-1 min-w-0">
-            <p className="text-[14px] font-bold text-white leading-tight truncate">{user?.name || 'User'}</p>
-            <div className="flex items-center gap-1.5 mt-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#f97316] animate-pulse" />
-              <p className="text-[10px] text-white/50 font-bold tracking-widest uppercase">Elite Node</p>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Main nav groups */}
-      <ScrollArea className="flex-1 px-2.5 py-4">
-        {navGroups[user.role].map(group => (
-          <div key={group.label} className="mb-6">
-            {!collapsed && (
-              <p className="text-[9px] font-bold text-white/30 uppercase tracking-[0.12em] px-3 mb-2">
-                {group.label}
-              </p>
-            )}
-            <nav className="flex flex-col gap-0.5">
-              {group.items.map(item => (
-                <NavItem key={item.href} item={item} collapsed={collapsed} />
-              ))}
-            </nav>
+      {/* ── Navigation Links ── */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden py-4 px-2 sm:px-4 space-y-6 sm:space-y-8 no-scrollbar">
+        {groups.map((group) => (
+          <div key={group.label} className="flex flex-col gap-1.5 sm:gap-2">
+            {!collapsed && <span className="text-[8px] sm:text-[9px] font-black text-white/20 uppercase tracking-[0.2em] px-4 mb-1">{group.label}</span>}
+            {group.items.map((item) => {
+              const active = isActive(item.href);
+              const ItemIcon = item.Icon;
+              return (
+                <NavLink
+                  key={item.href} to={item.href} end={item.href === '/dashboard/provider' || item.href === '/dashboard'}
+                  className={`relative flex items-center h-10 sm:h-12 px-2 rounded-2xl transition-all duration-300 group overflow-hidden ${
+                    active 
+                      ? 'bg-gradient-to-r from-white/15 to-transparent text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]' 
+                      : 'text-white/40 hover:bg-white/5 hover:text-white'
+                  }`}
+                  title={item.label}
+                >
+                  {active && <motion.div layoutId="activeNav" className="absolute left-0 top-1/4 bottom-1/4 w-0.5 sm:w-1 bg-indigo-600 rounded-r-full shadow-[0_0_15px_#4f46e5]" />}
+                  <div className={`w-8 h-8 sm:w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300 ${active ? `${item.bg} shadow-lg shadow-black/20` : 'bg-transparent group-hover:bg-white/5'}`}>
+                     <ItemIcon size={16} className={active ? item.color : 'text-white/40 group-hover:text-white'} />
+                  </div>
+                  {!collapsed && (
+                    <span className="ml-2 sm:ml-3 text-[12px] sm:text-[14px] font-semibold tracking-wide whitespace-nowrap">{item.label}</span>
+                  )}
+                </NavLink>
+              );
+            })}
           </div>
         ))}
-      </ScrollArea>
-
-      {/* Attractive Logout area */}
-      <div className="p-4 mt-auto">
-        <button
-          onClick={onLogout}
-          className={`group flex items-center gap-3 w-full rounded-2xl p-3.5 text-white/30 hover:text-red-500 hover:bg-red-500/5 transition-all duration-300
-                      ${collapsed ? 'justify-center' : ''}`}
-        >
-          <div className="w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-red-500/10 transition-colors">
-            <MdLogout size={18} className="shrink-0" />
-          </div>
-          {!collapsed && <span className="text-[11px] font-black uppercase tracking-[0.2em]">Logout</span>}
-        </button>
       </div>
 
+      {/* ── Bottom Logout ── */}
+      <div className="p-2 sm:p-4 border-t border-white/10 pb-6">
+         <button 
+           onClick={handleLogout}
+           className="w-full flex items-center h-10 sm:h-11 px-2 rounded-2xl text-red-400/50 hover:bg-red-500/10 hover:text-red-400 transition-all group overflow-hidden"
+         >
+            <div className="w-8 h-8 sm:w-9 h-9 rounded-xl flex items-center justify-center shrink-0">
+               <LogOut size={16} />
+            </div>
+            {!collapsed && <span className="ml-2 sm:ml-3 text-[12px] sm:text-[14px] font-semibold">Logout</span>}
+         </button>
+      </div>
     </div>
   );
 };
 
-/* ─────────────────────────────────────────
-   Top bar
-───────────────────────────────────────── */
-const TopBar = ({ user, navItems, onLogout, notifications, collapsed, setCollapsed }) => {
-  const isFreelancer = user?.role === 'freelancer';
-  const displayTitle = location.pathname.split('/').pop()?.replace('-', ' ') || 'Overview';
 
-  return (
-    <header className="h-[64px] bg-[#0a0a0a] flex items-center px-6 gap-6 sticky top-0 z-40 border-b border-white/5">
-
-      <div className="flex items-center gap-4">
-        {/* ChatGPT Style Sidebar Toggle (Visible when collapsed) */}
-        {collapsed && (
-          <button
-            onClick={() => setCollapsed(false)}
-            className="hidden md:flex p-2 text-zinc-400 hover:text-white hover:bg-white/5 rounded-lg transition-all"
-            title="Expand sidebar"
-          >
-            <PanelLeft size={20} />
-          </button>
-        )}
-
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="md:hidden text-slate-400 hover:bg-white/5">
-              <MdMenu size={22} />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="w-[220px] p-0 bg-[#1a1a2e] border-none">
-            <SidebarContent user={user} navItems={navItems} collapsed={false} onLogout={onLogout} onToggle={() => {}} />
-          </SheetContent>
-        </Sheet>
-      </div>
-
-      <h1 className="text-[15px] font-bold text-white capitalize leading-none pt-0.5 tracking-tight">
-        {displayTitle}
-      </h1>
-
-      <div className="flex-1" />
-
-      <div className="flex items-center gap-2">
-        {/* Topbar Actions */}
-        <div className="flex items-center justify-center w-[32px] h-[32px] bg-white/5 border border-white/5 rounded-lg cursor-pointer hover:bg-white/10 transition-colors">
-          <MdSearch size={17} className="text-slate-400" />
-        </div>
-
-        <div className="relative flex items-center justify-center w-[32px] h-[32px] bg-white/5 border border-white/5 rounded-lg cursor-pointer hover:bg-white/10 transition-colors">
-          <MdNotifications size={17} className="text-slate-400" />
-          <span className="absolute top-[6px] right-[6px] w-[7px] h-[7px] bg-[#ef4444] rounded-full border-[1.5px] border-[#0a0a0a]" />
-        </div>
-
-        <div className="w-[32px] h-[32px] bg-[#f97316] rounded-full flex items-center justify-center text-[11px] font-bold text-white uppercase cursor-pointer hover:scale-105 transition-transform">
-          {user?.name?.charAt(0) || 'U'}
-        </div>
-      </div>
-
-    </header>
-  );
-};
-
-/* ─────────────────────────────────────────
-   Main layout
-───────────────────────────────────────── */
+/* ─── Main Layout ────────────────────────────────────────────── */
 const DashboardLayout = () => {
-  const [user, setUser]           = useState(null);
-  const [collapsed, setCollapsed] = useState(false);
-  const navigate                  = useNavigate();
+  const [user, setUser] = useState(null);
+  const [collapsed, setCollapsed] = useState(window.innerWidth < 640);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const data = localStorage.getItem('user');
     if (data) setUser(JSON.parse(data));
     else navigate('/login');
+    
+    const handleResize = () => { if (window.innerWidth < 640) setCollapsed(true); };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, [navigate]);
-
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    navigate('/login');
-  };
-
-  const navItems = user?.role === 'freelancer' ? [] : []; // We use navGroups now
-  const sidebarW = collapsed ? 'w-[68px]' : 'w-[220px]';
 
   if (!user) return null;
 
-  return (
-    <div className="flex h-screen overflow-hidden bg-[#050505] font-sans text-slate-300">
+  const role = user.role === 'freelancer' ? 'freelancer' : 'customer';
+  const config = navConfig[role] || navConfig.freelancer;
 
-      {/* Desktop Sidebar */}
-      <aside 
-        className={`hidden md:flex flex-col flex-shrink-0 z-30 bg-[#0a0a0a] border-r border-white/5 transition-all duration-300 ease-in-out ${sidebarW}`}
-      >
-        <SidebarContent
-          user={user}
-          navItems={navItems}
-          collapsed={collapsed}
-          onLogout={handleLogout}
-          onToggle={() => setCollapsed(!collapsed)}
-        />
+  return (
+    <div className="flex h-screen w-screen overflow-hidden bg-[#0b0e14] font-sans text-slate-200">
+      
+      {/* ── SIDEBAR CONTAINER ── */}
+      <aside className="relative flex flex-shrink-0 h-full z-40">
+        <motion.div 
+           animate={{ width: collapsed ? 80 : 280 }}
+           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+           className="h-full bg-[#0a0a0a] border-r border-white/5 overflow-hidden shadow-2xl"
+        >
+          <SidebarContent user={user} groups={config.groups} collapsed={collapsed} />
+        </motion.div>
+
+        {/* ── ATTRACTIVE FLOATING TOGGLE BUTTON ── */}
+        <button 
+           onClick={() => setCollapsed(!collapsed)}
+           className={cn(
+             "absolute -right-3.5 top-32 w-7 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white z-50 border border-indigo-400/50 transition-all active:scale-90 shadow-[0_0_15px_rgba(79,70,229,0.4)] hover:shadow-[0_0_20px_rgba(79,70,229,0.6)] hover:bg-indigo-500 group",
+             collapsed && "animate-pulse"
+           )}
+        >
+           <motion.div
+             animate={{ rotate: collapsed ? 0 : 180 }}
+             transition={{ type: "spring", stiffness: 300, damping: 20 }}
+           >
+             <MdPlayArrow size={16} className="group-hover:scale-110 transition-transform" />
+           </motion.div>
+        </button>
       </aside>
 
-      {/* Main area */}
-      <div className="flex flex-col flex-1 min-h-screen overflow-hidden">
-        <TopBar
-          user={user}
-          navItems={navItems}
-          onLogout={handleLogout}
-          notifications={4}
-          collapsed={collapsed}
-          setCollapsed={setCollapsed}
-        />
-        <main className="flex-1 overflow-y-auto">
-          <div className="max-w-[1400px] mx-auto px-4 md:px-6 py-6 space-y-6 pb-24">
-            <Outlet />
-          </div>
-        </main>
-      </div>
+      {/* Main Content wrapper */}
+      <div className={cn(
+        "flex flex-col flex-1 min-w-0 overflow-hidden bg-transparent relative z-10 transition-all duration-300",
+        !collapsed && "blur-[4px] sm:blur-none pointer-events-none sm:pointer-events-auto"
+      )}>
+        
+        <div className="flex flex-col flex-1 overflow-hidden relative">
+          
+          {/* Top Navbar */}
+          <div className="flex items-center justify-between h-[70px] sm:h-[100px] px-4 sm:px-10 bg-[#0b0e14]/40 backdrop-blur-xl border-b border-white/5 z-30 shrink-0">
+            <div className="flex items-center gap-4 flex-1 min-w-0">
+               <div className="truncate">
+                  <h1 className="text-[16px] sm:text-[24px] font-black text-white leading-tight tracking-tight truncate">
+                    Hi, {user?.name?.split(' ')[0]}
+                  </h1>
+                  <p className="hidden sm:block text-[12px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">Vetted Node Active</p>
+               </div>
+            </div>
 
+            <div className="flex items-center justify-end gap-3 sm:gap-6">
+               <div className="flex items-center gap-3 sm:gap-4">
+                  <Link to={user?.role === 'freelancer' ? "/chat" : "/chat"}>
+                    <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:text-indigo-400 cursor-pointer transition-all">
+                       <Mail size={18} />
+                    </div>
+                  </Link>
+               </div>
+               
+               <Link to={user?.role === 'freelancer' ? "/dashboard/provider/settings" : "/profile"}>
+                 <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl border-2 border-indigo-600/30 p-0.5 shadow-xl shadow-black/5 cursor-pointer overflow-hidden transition-transform hover:scale-105 active:scale-95">
+                    <img src={user?.avatar || `https://ui-avatars.com/api/?name=${user?.name}&background=111111&color=fff`} alt="Avatar" className="w-full h-full rounded-full object-cover" />
+                 </div>
+               </Link>
+            </div>
+          </div>
+
+          <main className="flex-1 overflow-y-auto overflow-x-hidden relative no-scrollbar">
+             <div className="p-3 sm:p-6 lg:p-10 h-full">
+                <Outlet context={{ user }} />
+             </div>
+          </main>
+        </div>
+      </div>
     </div>
   );
 };

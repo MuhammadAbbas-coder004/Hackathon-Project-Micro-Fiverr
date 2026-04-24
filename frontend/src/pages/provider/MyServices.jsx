@@ -1,21 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  MdAdd, 
-  MdMoreVert, 
-  MdEdit, 
-  MdDelete, 
-  MdOpenInNew,
-  MdSearch,
-  MdFilterList,
-  MdGridView,
-  MdViewList,
-  MdStar,
-  MdLayers,
-  MdTrendingUp
+  MdAdd, MdMoreVert, MdEdit, MdDelete, MdOpenInNew, MdSearch, MdFilterList, 
+  MdGridView, MdViewList, MdStar, MdLayers, MdTrendingUp 
 } from 'react-icons/md';
+import { Sparkles, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { api } from '@/utils/api';
-import { useAuth } from '@/context/AuthContext';
+import { api } from '../../utils/api';
+import { useAuth } from '../../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const MyServices = () => {
@@ -47,177 +38,126 @@ const MyServices = () => {
 
   if (loading) return (
     <div className="flex items-center justify-center h-[50vh]">
-      <div className="w-12 h-12 border-4 border-[#f97316] border-t-transparent rounded-full animate-spin"></div>
+      <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
     </div>
   );
 
   return (
-    <div className="space-y-12 pb-20 overflow-hidden">
-      {/* Abstract Background Glows */}
-      <div className="fixed top-0 right-0 w-[500px] h-[500px] bg-orange-600/5 blur-[120px] rounded-full pointer-events-none -z-10" />
-
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-8 pt-4">
-        <div className="space-y-2">
-          <div className="flex items-center gap-3 mb-2">
-             <span className="text-[11px] font-black text-[#f97316] uppercase tracking-[0.4em] leading-none italic">Asset_Management</span>
-             <MdTrendingUp className="text-[#f97316]" size={16} />
+    <div className="space-y-10 sm:space-y-12 pb-24 overflow-hidden relative select-none">
+      <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 pt-4">
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+                <MdLayers size={22} />
+             </div>
+             <span className="text-[10px] sm:text-[12px] font-black text-indigo-400 uppercase tracking-[0.3em] leading-none">Inventory</span>
           </div>
-          <h1 className="text-5xl md:text-6xl font-black text-white tracking-tighter uppercase leading-none">
-            Matrix<br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-white/20">Inventory</span>
+          <h1 className="text-4xl sm:text-5xl md:text-7xl font-black text-white tracking-tighter leading-[0.9] uppercase">
+            My <span className="text-indigo-500">Gigs</span>
           </h1>
-          <p className="text-[12px] font-bold text-white/30 uppercase tracking-[0.2em] mt-4">Oversee and update your active service matrix nodes.</p>
+          <p className="text-[13px] sm:text-[14px] font-bold text-slate-500 max-w-md">Oversee, update, and optimize your service offerings.</p>
         </div>
         
-        <Link to="/dashboard/provider/services/create">
-          <button className="h-16 px-10 bg-white text-black font-black text-[11px] uppercase tracking-[0.3em] rounded-[28px] flex items-center gap-3 hover:bg-[#f97316] hover:text-white transition-all shadow-2xl active:scale-95">
-            <MdAdd size={22} /> Deploy_New_Node
+        <Link to="/dashboard/provider/services/create" className="w-full sm:w-auto">
+          <button className="w-full sm:w-auto h-16 sm:h-20 px-8 sm:px-10 bg-indigo-600 text-white font-black text-[13px] sm:text-[14px] uppercase tracking-[0.3em] rounded-full flex items-center justify-center gap-4 hover:bg-indigo-500 transition-all shadow-2xl shadow-indigo-600/20 active:scale-95">
+            <MdAdd size={24} /> Create Gig
           </button>
         </Link>
       </header>
 
-      {/* Control Bar */}
-      <div className="flex flex-col xl:flex-row gap-6 items-center justify-between">
-        <div className="relative w-full xl:w-[450px] group">
-          <MdSearch className="absolute left-6 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-[#f97316] transition-colors" size={22} />
+      {/* Control Bar (Liquid Glass) */}
+      <div className="flex flex-col xl:flex-row gap-6 items-center justify-between bg-[#0c0f16]/40 backdrop-blur-3xl p-4 sm:p-6 rounded-[32px] sm:rounded-[40px] border border-white/10 shadow-2xl ring-1 ring-white/5">
+        <div className="relative w-full xl:w-[400px] group">
+          <MdSearch className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-600" size={20} />
           <input 
-            type="text" 
-            placeholder="FILTER_MATRIX..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-[#111113] ring-1 ring-white/5 rounded-[28px] py-5 px-14 text-white placeholder:text-white/10 outline-none focus:ring-[#f97316]/30 transition-all font-black text-[11px] uppercase tracking-widest"
+            type="text" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-14 pr-6 text-white font-bold text-[14px] outline-none focus:border-indigo-500/50 ring-1 ring-white/5 placeholder:text-slate-600"
           />
         </div>
         
-        <div className="flex items-center gap-4">
-          <div className="flex bg-[#111113] p-2 rounded-[24px] ring-1 ring-white/5">
-            <button 
-              onClick={() => setViewMode('grid')}
-              className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${viewMode === 'grid' ? 'bg-[#f97316] text-white shadow-lg' : 'text-white/20 hover:text-white'}`}
-            >
-              <MdGridView size={22} />
-            </button>
-            <button 
-              onClick={() => setViewMode('list')}
-              className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${viewMode === 'list' ? 'bg-[#f97316] text-white shadow-lg' : 'text-white/20 hover:text-white'}`}
-            >
-              <MdViewList size={22} />
-            </button>
+        <div className="flex items-center justify-between w-full sm:w-auto gap-4 sm:gap-6">
+          <div className="flex bg-white/5 p-2 rounded-2xl border border-white/10 ring-1 ring-white/5">
+            <button onClick={() => setViewMode('grid')} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${viewMode === 'grid' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-slate-600 hover:text-white'}`}><MdGridView size={20} /></button>
+            <button onClick={() => setViewMode('list')} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${viewMode === 'list' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-slate-600 hover:text-white'}`}><MdViewList size={20} /></button>
           </div>
-          <button className="h-16 px-8 bg-white/5 ring-1 ring-white/5 rounded-[28px] flex items-center gap-3 text-white/40 font-black text-[10px] uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all">
-            <MdFilterList size={20} /> Advanced_Nodes
+          <button className="h-14 px-6 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-2 text-slate-500 font-black text-[11px] uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all ring-1 ring-white/5">
+            <MdFilterList size={20} /> Filters
           </button>
         </div>
       </div>
 
       <AnimatePresence mode="wait">
-        {filteredServices.length === 0 ? (
-          <motion.div 
-            initial={{ opacity: 0 }} 
-            animate={{ opacity: 1 }} 
-            className="h-[40vh] rounded-[56px] border-2 border-dashed border-white/5 flex flex-col items-center justify-center text-center space-y-6"
-          >
-            <MdLayers className="w-20 h-20 text-white/5 animate-pulse" />
-            <div>
-              <h3 className="text-2xl font-black text-white/20 uppercase tracking-tighter">Inventory Empty</h3>
-              <p className="text-[11px] font-black text-white/10 uppercase tracking-[0.4em] mt-2">Awaiting node deployment</p>
-            </div>
-          </motion.div>
-        ) : (
-          <motion.div 
-            key={viewMode}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10" : "space-y-6"}
-          >
-            {filteredServices.map((service, idx) => (
-              viewMode === 'grid' ? (
-                <motion.div 
-                  key={service._id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.05 }}
-                  className="group bg-[#111113] rounded-[48px] overflow-hidden flex flex-col transition-all duration-500 shadow-2xl ring-1 ring-white/5 hover:ring-[#f97316]/20"
-                >
-                  <div className="h-64 overflow-hidden relative">
-                    <img 
-                      src={service.image || "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=2070&auto=format&fit=crop"} 
-                      alt={service.title} 
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                    />
-                    <div className="absolute top-6 left-6 py-2 px-4 bg-black/60 backdrop-blur-md rounded-2xl text-white text-[10px] font-black border border-white/10 uppercase tracking-widest">
-                      {service.category}
+        <motion.div 
+          key={viewMode} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+          className={viewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-10" : "space-y-6 sm:space-y-8"}
+        >
+          {filteredServices.map((service, idx) => (
+            viewMode === 'grid' ? (
+              <motion.div 
+                key={service._id} 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.08 }}
+                className="bg-[#0c0f16]/60 backdrop-blur-3xl rounded-[40px] overflow-hidden flex flex-col shadow-2xl border border-white/10 hover:bg-[#0c0f16]/80 transition-all duration-500 ring-1 ring-white/5 group"
+              >
+                <div className="h-48 sm:h-64 overflow-hidden relative">
+                  <img src={service.image || "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=2070&auto=format&fit=crop"} alt={service.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0b0e14] via-transparent to-transparent" />
+                  <div className="absolute top-4 left-4 py-2 px-4 bg-black/60 backdrop-blur-xl rounded-full text-indigo-400 text-[9px] font-black uppercase tracking-[0.3em] border border-white/10 ring-1 ring-white/5">{service.category}</div>
+                </div>
+                <div className="p-6 sm:p-10 flex flex-col space-y-6">
+                  <h3 className="text-xl sm:text-2xl font-black text-white line-clamp-2 leading-tight tracking-tight uppercase group-hover:text-indigo-400 transition-colors">{service.title}</h3>
+                  <div className="flex items-center justify-between border-t border-white/5 pt-6">
+                    <div className="flex flex-col">
+                      <span className="text-[9px] text-slate-600 font-black uppercase tracking-[0.3em] mb-1">Price</span>
+                      <span className="text-2xl font-black text-indigo-400">${service.price}</span>
+                    </div>
+                    <div className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-xl border border-white/10 ring-1 ring-white/5">
+                      <Star className="text-indigo-400 fill-indigo-400" size={16} />
+                      <span className="font-black text-[15px] text-white">4.9</span>
                     </div>
                   </div>
-                  <div className="p-10 flex flex-col flex-grow space-y-8">
-                    <h3 className="text-2xl font-black text-white group-hover:text-[#f97316] transition-colors line-clamp-2 leading-none uppercase tracking-tighter">
-                      {service.title}
-                    </h3>
-                    
-                    <div className="flex items-center justify-between pt-auto border-t border-white/5 pt-8">
-                      <div className="flex flex-col">
-                        <span className="text-[9px] text-white/20 font-black uppercase tracking-[0.3em] mb-2">Price_Point</span>
-                        <span className="text-2xl font-black text-[#f97316] tracking-tighter">${service.price}</span>
-                      </div>
-                      <div className="flex flex-col items-end">
-                        <span className="text-[9px] text-white/20 font-black uppercase tracking-[0.3em] mb-2">Node_Rep</span>
-                        <div className="flex items-center gap-2">
-                          <MdStar className="text-[#f97316]" size={18} />
-                          <span className="font-black text-lg text-white">4.8</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-4">
-                      <Link to={`/dashboard/provider/services/edit/${service._id}`} className="flex-1">
-                        <button className="w-full h-14 rounded-2xl bg-white/5 text-white/40 hover:text-white hover:bg-white/10 font-black text-[10px] uppercase tracking-widest transition-all ring-1 ring-white/10 flex items-center justify-center gap-2">
-                          <MdEdit size={18} /> Mod_Node
-                        </button>
-                      </Link>
-                      <button className="h-14 w-14 rounded-2xl bg-white/5 flex items-center justify-center text-white/10 hover:text-red-500 hover:bg-red-500/10 transition-all ring-1 ring-white/10">
-                        <MdDelete size={20} />
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              ) : (
-                <div key={service._id} className="bg-[#111113] p-6 rounded-[32px] ring-1 ring-white/5 hover:ring-[#f97316]/20 transition-all group">
-                  <div className="flex items-center gap-8">
-                    <div className="w-24 h-24 rounded-2xl overflow-hidden shrink-0 ring-1 ring-white/10">
-                      <img src={service.image || "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=2070&auto=format&fit=crop"} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                    </div>
-                    <div className="flex-grow min-w-0">
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="text-[9px] text-[#f97316] font-black uppercase tracking-widest border border-[#f97316]/20 px-2 py-1 rounded-lg bg-[#f97316]/10">{service.category}</span>
-                      </div>
-                      <h3 className="text-xl font-black text-white truncate uppercase tracking-tighter">{service.title}</h3>
-                      <div className="flex items-center gap-6 mt-2">
-                        <span className="text-[#f97316] font-black text-xl tracking-tighter">${service.price}</span>
-                        <div className="flex items-center gap-2">
-                          <MdStar className="text-[#f97316]" size={16} />
-                          <span className="font-black text-sm text-white/60">4.8 (24_logs)</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex gap-3">
-                       <Link to={`/dashboard/provider/services/edit/${service._id}`}>
-                        <button className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-white/20 hover:text-white hover:bg-white/10 transition-all ring-1 ring-white/5">
-                          <MdEdit size={20} />
-                        </button>
-                      </Link>
-                      <button className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-white/10 hover:text-red-500 hover:bg-red-500/10 transition-all ring-1 ring-white/5">
-                        <MdDelete size={20} />
-                      </button>
-                    </div>
+                  <div className="flex gap-3">
+                    <Link to={`/dashboard/provider/services/edit/${service._id}`} className="flex-[3]">
+                      <button className="w-full h-14 rounded-2xl bg-white/5 border border-white/10 text-slate-400 hover:bg-indigo-600 hover:text-white hover:border-indigo-500 font-black text-[11px] uppercase tracking-widest transition-all ring-1 ring-white/5">Edit</button>
+                    </Link>
+                    <button className="h-14 flex-1 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-600 hover:text-white transition-all flex items-center justify-center"><MdDelete size={20} /></button>
                   </div>
                 </div>
-              )
-            ))}
-          </motion.div>
-        )}
+              </motion.div>
+            ) : (
+              <motion.div 
+                key={service._id} 
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.06 }}
+                className="bg-[#0c0f16]/60 backdrop-blur-3xl p-4 sm:p-8 rounded-[32px] sm:rounded-[44px] border border-white/10 shadow-2xl flex flex-col sm:flex-row items-center gap-6 sm:gap-10 ring-1 ring-white/5 hover:bg-[#0c0f16]/80 transition-all group"
+              >
+                <div className="w-full sm:w-32 h-48 sm:h-32 rounded-2xl sm:rounded-[32px] overflow-hidden shrink-0 shadow-lg">
+                  <img src={service.image || "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=2070&auto=format&fit=crop"} className="w-full h-full object-cover" />
+                </div>
+                <div className="flex-grow min-w-0 text-center sm:text-left w-full">
+                  <span className="text-[9px] text-indigo-400 font-black uppercase tracking-widest border border-indigo-500/20 px-3 py-1.5 rounded-full bg-indigo-500/10 inline-block mb-3">{service.category}</span>
+                  <h3 className="text-2xl sm:text-3xl font-black text-white truncate tracking-tight uppercase group-hover:text-indigo-400 transition-colors">{service.title}</h3>
+                  <div className="flex items-center justify-center sm:justify-start gap-8 mt-4">
+                    <div className="flex flex-col"><span className="text-[9px] text-slate-600 font-black uppercase tracking-[0.3em] mb-1">Starting</span><span className="text-indigo-400 font-black text-2xl tracking-tighter">${service.price}</span></div>
+                    <div className="w-[1px] h-8 bg-white/10" />
+                    <div className="flex flex-col"><span className="text-[9px] text-slate-600 font-black uppercase tracking-[0.3em] mb-1">Rating</span><div className="flex items-center gap-2"><Star className="text-indigo-400 fill-indigo-400" size={16} /><span className="font-black text-[15px] text-white">4.9</span></div></div>
+                  </div>
+                </div>
+                <div className="flex gap-4 w-full sm:w-auto">
+                  <Link to={`/dashboard/provider/services/edit/${service._id}`} className="flex-1 sm:flex-none">
+                    <button className="w-full sm:w-16 h-14 sm:h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-500 hover:text-indigo-400 hover:bg-white/10 transition-all ring-1 ring-white/5"><MdEdit size={22} /></button>
+                  </Link>
+                  <button className="flex-1 sm:flex-none w-full sm:w-16 h-14 sm:h-16 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 hover:bg-rose-600 hover:text-white transition-all"><MdDelete size={22} /></button>
+                </div>
+              </motion.div>
+            )
+          ))}
+        </motion.div>
       </AnimatePresence>
     </div>
   );
 };
 
 export default MyServices;
-

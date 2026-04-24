@@ -102,6 +102,14 @@ router.post("/register", async (req, res) => {
 
 // POST /api/auth/login
 router.post("/login", async (req, res) => {
+  // Check if database is connected
+  if (User.db.readyState !== 1) {
+    console.error("❌ Login failed: Database not connected. State:", User.db.readyState);
+    return res.status(503).json({ 
+      message: "Database is not connected. Login is currently unavailable." 
+    });
+  }
+
   try {
     const { email, password } = req.body;
 
@@ -166,7 +174,7 @@ router.get("/me", protect, async (req, res) => {
 // PUT /api/auth/profile (Protected Route)
 router.put("/profile", protect, async (req, res) => {
   try {
-    const { name, avatar, phone, bio, skills, location } = req.body;
+    const { name, avatar, coverImage, phone, bio, skills, location } = req.body;
     const user = await User.findById(req.user._id);
 
     if (!user) {
@@ -175,6 +183,7 @@ router.put("/profile", protect, async (req, res) => {
 
     if (name) user.name = name;
     if (avatar !== undefined) user.avatar = avatar;
+    if (coverImage !== undefined) user.coverImage = coverImage;
     if (phone !== undefined) user.phone = phone;
     if (bio !== undefined) user.bio = bio;
     if (skills !== undefined) user.skills = Array.isArray(skills) ? skills : skills.split(",").map(s => s.trim());

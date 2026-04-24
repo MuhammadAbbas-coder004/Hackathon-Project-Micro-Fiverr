@@ -19,44 +19,44 @@ const CustomerDashboard = () => {
     <div className="space-y-8 animate-in fade-in duration-500">
       
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-        <div className="flex items-center gap-6">
-          <div className="relative">
-            <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center border-4 border-background shadow-sm overflow-hidden">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3 sm:gap-6">
+          <div className="relative shrink-0">
+            <div className="w-12 h-12 sm:w-20 sm:h-20 bg-primary/10 rounded-full flex items-center justify-center border-2 sm:border-4 border-background shadow-sm overflow-hidden">
               {user?.avatar ? (
                 <img src={user?.avatar} alt="Profile" className="w-full h-full object-cover" />
               ) : (
-                <span className="text-3xl font-bold text-primary uppercase">{user?.name?.charAt(0)}</span>
+                <span className="text-xl sm:text-3xl font-bold text-primary uppercase">{user?.name?.charAt(0)}</span>
               )}
             </div>
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-foreground tracking-tight">Welcome, {user?.name?.split(' ')[0]}</h1>
-            <p className="text-muted-foreground mt-1 flex items-center gap-2 text-sm font-medium">
-              Ready to hire top talents today?
+            <h1 className="text-xl sm:text-3xl font-bold text-foreground tracking-tight">Welcome, {user?.name?.split(' ')[0]}</h1>
+            <p className="text-muted-foreground mt-0.5 sm:mt-1 text-[10px] sm:text-sm font-medium">
+              Ready to hire top talents?
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3 w-full md:w-auto">
-          <Button asChild className="flex-1 md:flex-none gap-2">
+        <div className="flex items-center shrink-0">
+          <Button asChild className="gap-2 h-10 sm:h-auto px-4 sm:px-6">
             <Link to="/services">
-              <Search size={16} /> Browse Services
+              <Search size={16} className="hidden sm:block" /> Browse
             </Link>
           </Button>
         </div>
       </div>
 
       {/* Quick Actions Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+      <div className="flex overflow-x-auto gap-4 sm:gap-6 pb-4 snap-x no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
         {actions.map((act, i) => (
-          <Link key={i} to={act.to} className="block group h-full">
+          <Link key={i} to={act.to} className="block group shrink-0 w-[240px] sm:w-auto sm:flex-1 snap-start h-full">
             <Card className="border-border/50 shadow-none hover:shadow-md transition-all h-full">
-              <CardContent className="p-6">
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${act.bg} ${act.color} mb-4 group-hover:scale-110 transition-transform`}>
-                  <act.icon size={24} strokeWidth={2.5} />
+              <CardContent className="p-5 sm:p-6">
+                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center ${act.bg} ${act.color} mb-3 sm:mb-4 group-hover:scale-110 transition-transform`}>
+                  <act.icon size={20} className="sm:w-6 sm:h-6" strokeWidth={2.5} />
                 </div>
-                <h3 className="text-lg font-bold text-foreground">{act.label}</h3>
-                <p className="text-sm text-muted-foreground mt-1">{act.desc}</p>
+                <h3 className="text-base sm:text-lg font-bold text-foreground">{act.label}</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">{act.desc}</p>
               </CardContent>
             </Card>
           </Link>
