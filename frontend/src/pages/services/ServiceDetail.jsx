@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
-import axios from 'axios';
+import api from '@/utils/api';
 import { 
   Star, 
   MapPin, 
@@ -24,7 +24,7 @@ import { Badge } from '../../components/ui/Badge';
 import { useAuth } from '../../context/AuthContext';
 import { cn } from '../../utils/cn';
 import StarRating from '../../components/ui/StarRating';
-import api from '../../utils/api';
+
 
 const ServiceDetail = () => {
   const { id } = useParams();
@@ -49,13 +49,13 @@ const ServiceDetail = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await axios.get(`/api/services/${id}`);
+        const res = await api.get(`/services/${id}`);
         setService(res.data);
         setCustomAmount(res.data.price);
         
         // Fetch reviews for this provider
         const providerId = res.data.providerId._id || res.data.providerId;
-        const reviewsRes = await axios.get(`/api/reviews/${providerId}`);
+        const reviewsRes = await api.get(`/reviews/${providerId}`);
         setReviews(reviewsRes.data);
       } catch (err) {
         console.error("Error fetching service data", err);
@@ -72,12 +72,10 @@ const ServiceDetail = () => {
     
     setProcessing(true);
     try {
-      const res = await axios.post('/api/payment/fake-payment', {
+      const res = await api.post('/payment/fake-payment', {
         freelancerId: service.providerId._id,
         serviceId: service._id,
         amount: customAmount
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
       });
 
       if (res.data.success) {
@@ -108,7 +106,7 @@ const ServiceDetail = () => {
       
       // Provide an immediate optimistic UI update or real backend response
       // Since our GET route populates reviewer, we might need a dummy populate or just re-fetch
-      const reviewsRes = await axios.get(`/api/reviews/${providerId}`);
+      const reviewsRes = await api.get(`/reviews/${providerId}`);
       setReviews(reviewsRes.data);
       
       setShowReviewForm(false);

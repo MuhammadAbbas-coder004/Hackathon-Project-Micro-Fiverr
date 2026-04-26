@@ -35,7 +35,7 @@ const navConfig = {
           { label: 'My Gigs',      href: '/dashboard/provider/services',     Icon: Box, badge: '8', color: 'text-indigo-400', bg: 'bg-indigo-500/20' },
           { label: 'Proposals',    href: '/dashboard/provider/applications', Icon: Send, color: 'text-sky-400', bg: 'bg-sky-500/20' },
           { label: 'Active Jobs',  href: '/dashboard/provider/active-jobs',  Icon: Briefcase, color: 'text-amber-400', bg: 'bg-amber-500/20' },
-          { label: 'Live Chat',    href: '/chat',                            Icon: MessageSquare, badge: '4', color: 'text-pink-400', bg: 'bg-pink-500/20' },
+          { label: 'Chat',         href: '/chat',                            Icon: MessageSquare, badge: '4', color: 'text-pink-400', bg: 'bg-pink-500/20' },
         ],
       },
     ],

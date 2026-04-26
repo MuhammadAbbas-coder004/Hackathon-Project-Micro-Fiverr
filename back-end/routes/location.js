@@ -18,12 +18,12 @@ router.get("/nearby", protect, async (req, res) => {
     const allFreelancers = await User.find({ 
       role: "freelancer", 
       isOnline: true 
-    }).select("name avatar rating lat long location bio");
+    }).select("name avatar rating lat long location bio").lean();
 
-    const nearby = allFreelancers.filter(f => {
+    const nearby = allFreelancers.map(f => {
       const dist = getDistanceFromLatLonInKm(lat, lng, f.lat, f.long);
-      return dist <= radius;
-    });
+      return { ...f, distance: dist.toFixed(1) };
+    }).filter(f => parseFloat(f.distance) <= parseFloat(radius));
 
     res.json(nearby);
   } catch (err) {

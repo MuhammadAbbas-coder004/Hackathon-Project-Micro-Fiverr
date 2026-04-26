@@ -58,6 +58,14 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    rating: {
+      type: Number,
+      default: 0,
+    },
+    reviewCount: {
+      type: Number,
+      default: 0,
+    },
     lat: {
       type: Number,
       default: 24.8607, // Default Karachi lat

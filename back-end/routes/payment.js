@@ -24,8 +24,11 @@ router.post("/fake-payment", protect, async (req, res) => {
     // Ensure freelancer exists
     const freelancer = await User.findById(freelancerId);
     if (!freelancer) {
+      console.error(`❌ Freelancer not found in DB! Attempted ID: ${freelancerId}`);
       return res.status(404).json({ message: "Freelancer not found" });
     }
+
+    console.log(`👤 Found Freelancer: ${freelancer.name} (Current Balance: ${freelancer.balance || 0})`);
 
     // 1. Create Transaction record
     const transaction = await Transaction.create({
@@ -38,9 +41,14 @@ router.post("/fake-payment", protect, async (req, res) => {
       isConfirmed: false
     });
 
+    console.log(`📝 Transaction Created: ${transaction._id} for Rs. ${amount}`);
+
     // 2. Update Freelancer's balance
-    freelancer.balance = (freelancer.balance || 0) + Number(amount);
+    const oldBalance = Number(freelancer.balance || 0);
+    freelancer.balance = oldBalance + Number(amount);
     await freelancer.save();
+    
+    console.log(`✅ Balance Updated for ${freelancer.name}: ${oldBalance} -> ${freelancer.balance}`);
       
     // 3. Notify freelancer via Socket.io
     const io = req.app.get("socketio");

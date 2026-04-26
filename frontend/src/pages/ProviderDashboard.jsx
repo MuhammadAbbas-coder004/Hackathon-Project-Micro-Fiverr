@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '@/utils/api';
 import DashboardLayout from '../components/DashboardLayout';
 import Overview from './dashboard/Overview';
 import MyServices from './dashboard/MyServices';
@@ -20,34 +20,54 @@ const ProviderDashboard = () => {
     activeJobs: [],
     reviews: [],
     notifications: [],
+    balance: 0,
+    history: [],
   });
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchAllData = async () => {
+    setRefreshing(true);
+    try {
+      console.log('📡 Fetching latest node intelligence...');
+      const [services, applied, active, userMe, history] = await Promise.all([
+        api.get('/services/provider'),
+        api.get('/jobs/applied').catch(() => ({ data: [] })),
+        api.get('/jobs/active').catch(() => ({ data: [] })),
+        api.get('/auth/me').catch(() => ({ data: { user: { balance: 0 } } })),
+        api.get('/payment/history').catch(() => ({ data: [] })),
+      ]);
+
+      console.log('💰 Balance detected:', userMe.data.user?.balance);
+      console.log('📜 History items:', history.data.length);
+
+      // Calculate total from history as a fallback/verification
+      const historyTotal = (history.data || []).reduce((acc, item) => acc + (item.amount || 0), 0);
+      const finalBalance = userMe.data.user?.balance || historyTotal || 0;
+
+      setData({
+        services: services.data || [],
+        appliedJobs: applied.data || [],
+        activeJobs: active.data || [],
+        reviews: [],
+        notifications: [],
+        balance: finalBalance,
+        history: history.data || [],
+      });
+      
+      // Update localStorage to keep it in sync
+      if (userMe.data.user) {
+        localStorage.setItem('user', JSON.stringify(userMe.data.user));
+      }
+    } catch (err) {
+      console.error('❌ Error fetching freelancer dashboard data', err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchAllData = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const config = { headers: { Authorization: `Bearer ${token}` } };
-
-        const [services, applied, active] = await Promise.all([
-          axios.get('/api/services/provider', config),
-          axios.get('/api/jobs/applied', config).catch(() => ({ data: [] })),
-          axios.get('/api/jobs/active', config).catch(() => ({ data: [] })),
-        ]);
-
-        setData({
-          services: services.data || [],
-          appliedJobs: applied.data || [],
-          activeJobs: active.data || [],
-          reviews: [],
-          notifications: [],
-        });
-      } catch (err) {
-        console.error('Error fetching freelancer dashboard data', err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchAllData();
   }, []);
 
@@ -57,12 +77,13 @@ const ProviderDashboard = () => {
         return (
           <Overview
             stats={{
-              earnings: 1250,
+              earnings: data.balance,
               active: data.activeJobs.length,
               completed: 8,
               rating: 4.9,
               gigs: data.services.length,
             }}
+            history={data.history}
           />
         );
       case 'services':

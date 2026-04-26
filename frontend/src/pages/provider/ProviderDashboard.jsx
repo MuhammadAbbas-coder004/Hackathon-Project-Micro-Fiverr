@@ -90,12 +90,12 @@ const FreelancerGoalCard = ({ title, progress, current, target, colorClass, icon
 );
 
 /* --- Weekly Activity Chart (Liquid Glass) --- */
-const WeeklyActivityChart = () => {
-   const days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-   const data = [
-      { u: 30, r: 70 }, { u: 45, r: 55 }, { u: 60, r: 40 },
-      { u: 20, r: 80 }, { u: 75, r: 25 }, { u: 40, r: 60 }, { u: 55, r: 45 }
-   ];
+const WeeklyActivityChart = ({ viewData }) => {
+   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+   const todayIndex = new Date().getDay();
+   const data = viewData && viewData.length === 7 ? viewData : [0, 0, 0, 0, 0, 0, 0];
+   const max = Math.max(...data, 1);
+
    return (
       <div className="w-full h-[200px] sm:h-[260px] flex items-end justify-between px-2 sm:px-6 mt-8 sm:mt-12 relative">
          <div className="absolute inset-x-0 top-0 bottom-10 flex flex-col justify-between pointer-events-none opacity-[0.05]">
@@ -104,21 +104,23 @@ const WeeklyActivityChart = () => {
             ))}
          </div>
 
-         {data.map((d, i) => (
+         {data.map((val, i) => (
             <div key={i} className="flex flex-col items-center gap-3 sm:gap-5 w-full group h-full justify-end relative z-10">
                <div className="flex flex-col items-center gap-2 w-[16px] sm:w-[24px] h-[150px] sm:h-[200px] justify-end relative">
+                  <div className="absolute inset-0 bg-white/5 rounded-full" />
                   <motion.div
-                     initial={{ height: 0, opacity: 0 }}
-                     animate={{ height: `${d.u}%`, opacity: 1 }}
-                     className="w-full bg-white/10 rounded-t-full z-10 group-hover:bg-white/20 transition-colors"
-                  />
-                  <motion.div
-                     initial={{ height: 0, opacity: 0 }}
-                     animate={{ height: `${d.r}%`, opacity: 1 }}
-                     className="w-full bg-gradient-to-t from-indigo-600 to-indigo-400 rounded-b-full group-hover:shadow-[0_0_20px_rgba(79,70,229,0.3)] transition-all cursor-pointer relative overflow-hidden"
-                  />
+                     initial={{ height: 0 }}
+                     animate={{ height: `${(val / max) * 100}%` }}
+                     className="w-full bg-gradient-to-t from-indigo-600 to-indigo-400 rounded-full group-hover:shadow-[0_0_20px_rgba(79,70,229,0.5)] transition-all cursor-pointer relative overflow-hidden"
+                  >
+                     <div className="absolute top-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/80 text-white text-[8px] px-1 rounded backdrop-blur-md">
+                        {val}
+                     </div>
+                  </motion.div>
                </div>
-               <span className="text-[10px] sm:text-[12px] font-black text-slate-600 group-hover:text-white transition-colors">{days[i]}</span>
+               <span className={`text-[10px] sm:text-[12px] font-black transition-colors ${i === todayIndex ? 'text-indigo-400' : 'text-slate-600 group-hover:text-white'}`}>
+                  {days[i]}
+               </span>
             </div>
          ))}
       </div>
@@ -174,28 +176,108 @@ const ProviderDashboard = () => {
    const { user } = useAuth();
    const navigate = useNavigate();
    const [vendorStats, setVendorStats] = useState({
-      servicesCount: 0, activeBookings: 0, rating: user?.rating || 4.9, earnings: 0
+      servicesCount: 0, 
+      activeBookings: 0, 
+      rating: user?.rating || 4.9, 
+      ratingCount: 0,
+      totalViews: 0,
+      earnings: 0
    });
    const [balance, setBalance] = useState(0);
+   const [history, setHistory] = useState([]);
    const [activeBookingId, setActiveBookingId] = useState(null);
+   const [refreshing, setRefreshing] = useState(false);
+   const [weeklyViews, setWeeklyViews] = useState([0, 0, 0, 0, 0, 0, 0]);
+   const [activityTimeline, setActivityTimeline] = useState([]);
+
+   const fetchStats = async () => {
+      setRefreshing(true);
+      const currentUserId = user?._id || user?.id;
+      try {
+         console.log('📡 Fetching Node Intelligence...');
+         const [statsRes, bookingsRes, servicesRes, userMe, paymentHistory, reviewsRes] = await Promise.all([
+            api.get('/bookings/provider/stats').catch(() => ({ data: { totalEarned: 0 } })),
+            api.get('/bookings/provider').catch(() => ({ data: [] })),
+            api.get('/services').catch(() => ({ data: [] })),
+            api.get('/auth/me').catch(() => ({ data: { user: { balance: 0 } } })),
+            api.get('/payment/history').catch(() => ({ data: [] })),
+            api.get(`/reviews/${currentUserId}`).catch(() => ({ data: [] })), 
+         ]);
+
+         console.log('📦 Dashboard Data Load:');
+         console.log(' - Services Found:', servicesRes.data?.length);
+         console.log(' - Reviews Found:', reviewsRes.data?.length);
+         console.log(' - Bookings Found:', bookingsRes.data?.length);
+
+         const myId = user?._id?.toString();
+         const myServices = (servicesRes.data || []).filter(s => {
+            const pid = s.providerId?._id || s.providerId;
+            return pid && pid.toString() === myId;
+         });
+         
+         const weeklyCounts = [0, 0, 0, 0, 0, 0, 0];
+         myServices.forEach(service => {
+            if (service.viewHistory) {
+               service.viewHistory.forEach(h => {
+                  const dayIndex = new Date(h.date).getDay();
+                  weeklyCounts[dayIndex] += h.count;
+               });
+            }
+         });
+         setWeeklyViews(weeklyCounts);
+
+         const totalViews = myServices.reduce((acc, s) => acc + (Number(s.views) || 0), 0);
+         const myReviews = reviewsRes.data || [];
+
+         const active = (bookingsRes.data || []).find(b => b.status === 'active' || b.status === 'Paid');
+         if (active) setActiveBookingId(active._id);
+
+         // Calculate total from history as a fallback/verification
+         const historyTotal = (paymentHistory.data || []).reduce((acc, item) => acc + (item.amount || 0), 0);
+         const finalBalance = userMe.data.user?.balance || historyTotal || 0;
+
+         setBalance(finalBalance);
+         setHistory(paymentHistory.data || []);
+
+         // 🧩 Build Real-Time Activity Timeline
+         const allActivities = [
+            ...(bookingsRes.data || []).map(b => ({
+               name: b.customerId?.name || b.customerName || 'Client Order',
+               status: b.status,
+               amount: b.price || b.amount || 0,
+               date: b.createdAt
+            })),
+            ...(paymentHistory.data || []).map(p => ({
+               name: p.clientId?.name || p.customerName || 'Payment',
+               status: p.status || 'Paid',
+               amount: p.amount || 0,
+               date: p.createdAt
+            }))
+         ].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+         setActivityTimeline(allActivities.slice(0, 10));
+         
+         setVendorStats({
+            servicesCount: myServices.length,
+            activeBookings: (bookingsRes.data || []).filter(b => b.status === 'active' || b.status === 'Paid').length,
+            rating: userMe.data.user?.rating || user?.rating || 0,
+            ratingCount: userMe.data.user?.reviewCount || myReviews.length || 0,
+            totalViews: totalViews,
+            earnings: statsRes.data.totalEarned
+         });
+
+         // Sync localStorage
+         if (userMe.data.user) {
+            localStorage.setItem('user', JSON.stringify(userMe.data.user));
+         }
+      } catch (err) { 
+         console.error("Stats Error", err); 
+      } finally {
+         setRefreshing(false);
+      }
+   };
 
    useEffect(() => {
-      const fetchStats = async () => {
-         try {
-            const statsRes = await api.get('/bookings/provider/stats');
-            const bookingsRes = await api.get('/bookings/provider');
-            const servicesRes = await api.get('/services');
-            const myServices = servicesRes.data.filter(s => s.providerId === user._id);
-            const active = bookingsRes.data.find(b => b.status === 'active' || b.status === 'Paid');
-            if (active) setActiveBookingId(active._id);
-            setVendorStats({
-               servicesCount: myServices.length,
-               activeBookings: bookingsRes.data.filter(b => b.status === 'active' || b.status === 'Paid').length,
-               rating: user?.rating || 4.9,
-               earnings: statsRes.data.totalEarned
-            });
-         } catch (err) { console.error("Stats Error", err); }
-      };
       if (user?._id) fetchStats();
    }, [user]);
 
@@ -208,39 +290,52 @@ const ProviderDashboard = () => {
             {/* Balance + Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-12">
                {/* Balance Card (Liquid Glass) */}
-               <motion.div className="bg-[#0c0f16]/60 backdrop-blur-3xl rounded-[36px] sm:rounded-[44px] p-8 sm:p-12 flex flex-col justify-between shadow-2xl border border-white/10 relative overflow-hidden group ring-1 ring-white/5">
+               <motion.div 
+                  className="bg-[#0c0f16]/60 backdrop-blur-3xl rounded-[36px] sm:rounded-[44px] p-8 sm:p-12 flex flex-col justify-between shadow-2xl border border-white/10 relative overflow-hidden group ring-1 ring-white/5"
+               >
                   <div className="absolute top-0 right-0 w-48 h-48 bg-indigo-600/5 rounded-full blur-[60px] pointer-events-none" />
-                  <div className="mb-8 relative z-10">
-                     <div className="flex items-center gap-2 mb-2">
-                        <Sparkles size={14} className="text-indigo-400 animate-pulse" />
-                        <h3 className="text-[12px] sm:text-[14px] font-black text-slate-500 uppercase tracking-[0.3em]">Portfolio Balance</h3>
+                  <div className="mb-8 relative z-10 flex justify-between items-center">
+                     <div>
+                        <div className="flex items-center gap-2 mb-2">
+                           <Sparkles size={14} className="text-indigo-400 animate-pulse" />
+                           <h3 className="text-[12px] sm:text-[14px] font-black text-slate-500 uppercase tracking-[0.3em]">Portfolio Balance</h3>
+                        </div>
+                        <div className="h-1 w-8 bg-indigo-600 rounded-full" />
                      </div>
-                     <div className="h-1 w-8 bg-indigo-600 rounded-full" />
+                     <button 
+                        onClick={fetchStats}
+                        disabled={refreshing}
+                        className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white hover:bg-indigo-600 transition-all active:scale-90 shadow-xl"
+                     >
+                        <MdScanner className={refreshing ? 'animate-spin text-indigo-400' : ''} size={20} />
+                     </button>
                   </div>
                   <div className="mb-10 relative z-10">
                      <div className="flex items-baseline gap-1">
                         <span className="text-[20px] sm:text-[24px] font-black text-slate-600">$</span>
-                        <h1 className="text-[48px] sm:text-[64px] font-black text-white tracking-tighter leading-none">0.00</h1>
+                        <h1 className="text-[48px] sm:text-[64px] font-black text-white tracking-tighter leading-none">
+                           {balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </h1>
                      </div>
                   </div>
                   <div className="flex flex-col sm:flex-row gap-4 relative z-10">
                      <button onClick={() => navigate('/dashboard/provider/services/create')} className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black text-[14px] uppercase tracking-widest shadow-2xl shadow-indigo-600/20 hover:bg-indigo-500 active:scale-95 transition-all">
                         Create Gig
                      </button>
-                     <button className="flex-1 py-4 bg-white/5 border border-white/10 text-slate-400 rounded-2xl font-black text-[14px] uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all ring-1 ring-white/5">
+                     <button onClick={() => navigate('/dashboard/provider/profile')} className="flex-1 py-4 bg-white/5 border border-white/10 text-slate-400 rounded-2xl font-black text-[14px] uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all ring-1 ring-white/5">
                         Profile
                      </button>
                   </div>
                </motion.div>
 
                {/* Stat Cards Column */}
-               <div className="flex flex-col gap-6 sm:gap-10">
-                  <div className="flex gap-4 sm:gap-10">
-                     <StatMiniCard title="Rating" amount={vendorStats.rating} type="income" />
-                     <StatMiniCard title="Gigs" amount={vendorStats.servicesCount} type="expense" />
-                  </div>
-                  <NexusRadarCard active={!!activeBookingId} onTrack={() => navigate(`/track-client/${activeBookingId}`)} />
-               </div>
+                <div className="flex flex-col gap-8 w-full overflow-hidden">
+                   <div className="grid grid-cols-2 gap-4 sm:gap-6 w-full">
+                      <StatMiniCard title="User Rating" amount={vendorStats.ratingCount} type="income" />
+                      <StatMiniCard title="Gig Views" amount={vendorStats.totalViews} type="expense" />
+                   </div>
+                   <NexusRadarCard active={!!activeBookingId} onTrack={() => navigate(`/track-client/${activeBookingId}`)} />
+                </div>
             </div>
 
             {/* Activity Chart (Liquid Glass) */}
@@ -255,12 +350,19 @@ const ProviderDashboard = () => {
                      <div className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full bg-indigo-500" /><span className="text-[11px] font-black text-slate-400">Orders</span></div>
                   </div>
                </div>
-               <WeeklyActivityChart />
+               <WeeklyActivityChart viewData={weeklyViews} />
             </div>
 
             {/* Goals Grid (Liquid Glass) */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-10 pb-10">
-               <FreelancerGoalCard title="Views" progress={85} current="1.2k" target="2k" colorClass="bg-indigo-900" icon={Activity} />
+               <FreelancerGoalCard 
+                  title="Gig Views Progress" 
+                  progress={Math.min(Math.round((vendorStats.totalViews / 1000) * 100), 100)} 
+                  current={vendorStats.totalViews} 
+                  target="1K Target" 
+                  colorClass="bg-indigo-900" 
+                  icon={Activity} 
+               />
                <FreelancerGoalCard title="Orders" progress={vendorStats.activeBookings > 0 ? 100 : 0} current={vendorStats.activeBookings} target="Max" colorClass="bg-indigo-600" icon={CheckCircle2} />
                <div className="bg-[#0c0f16]/40 border-2 border-dashed border-white/5 rounded-[36px] flex flex-col items-center justify-center p-10 cursor-pointer hover:bg-[#0c0f16]/60 transition-all group ring-1 ring-white/5">
                   <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-500 group-hover:bg-indigo-600 group-hover:text-white transition-all"><Plus size={24} /></div>
@@ -298,19 +400,27 @@ const ProviderDashboard = () => {
             <div className="flex-1 bg-[#0c0f16]/60 backdrop-blur-3xl rounded-[36px] p-8 sm:p-10 shadow-2xl border border-white/10 ring-1 ring-white/5">
                <h3 className="text-[20px] font-black text-white mb-8 uppercase tracking-tight">Timeline</h3>
                <div className="space-y-6">
-                  {[
-                     { n: 'Website Build', d: '2h ago', a: 'Active', c: 'bg-indigo-600 text-white' },
-                     { n: 'Brand Logo', d: '1d ago', a: 'Done', c: 'bg-emerald-500/20 text-emerald-400' }
-                  ].map((h, i) => (
+                  {activityTimeline.length > 0 ? activityTimeline.map((h, i) => (
                      <div key={i} className="flex items-center gap-4 group">
-                        <div className={`w-12 h-12 rounded-2xl ${h.c} flex items-center justify-center font-black text-[18px]`}>{h.n.charAt(0)}</div>
-                        <div className="flex-1 min-w-0">
-                           <h4 className="text-[15px] font-black text-white truncate">{h.n}</h4>
-                           <p className="text-[11px] font-bold text-slate-600">{h.d}</p>
+                        <div className={`w-12 h-12 rounded-2xl ${h.status?.toLowerCase() === 'paid' || h.status?.toLowerCase() === 'completed' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-indigo-600/20 text-indigo-400'} flex items-center justify-center font-black text-[18px]`}>
+                           {(h.name || 'U').charAt(0)}
                         </div>
-                        <span className={`text-[10px] font-black px-3 py-1.5 rounded-full border ${h.a === 'Done' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'}`}>{h.a}</span>
+                        <div className="flex-1 min-w-0">
+                           <div className="flex items-center justify-between">
+                              <h4 className="text-[15px] font-black text-white truncate">{h.name || 'Client Order'}</h4>
+                              <span className="text-[13px] font-black text-emerald-400">Rs.{h.amount?.toLocaleString()}</span>
+                           </div>
+                           <p className="text-[11px] font-bold text-slate-600">{new Date(h.date || Date.now()).toLocaleTimeString()} - {new Date(h.date || Date.now()).toLocaleDateString()}</p>
+                        </div>
+                        <span className={`text-[10px] font-black px-3 py-1.5 rounded-full border ${h.status?.toLowerCase() === 'paid' || h.status?.toLowerCase() === 'completed' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'}`}>
+                           {h.status?.toLowerCase() === 'paid' || h.status?.toLowerCase() === 'completed' ? 'Done' : 'Pending'}
+                        </span>
                      </div>
-                  ))}
+                  )) : (
+                     <div className="text-center py-10 opacity-40">
+                        <p className="text-[12px] font-black uppercase tracking-widest text-slate-500">No Activity Yet</p>
+                     </div>
+                  )}
                </div>
             </div>
          </div>

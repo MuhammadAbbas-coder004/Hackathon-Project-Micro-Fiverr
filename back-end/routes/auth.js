@@ -1,6 +1,9 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const User = require("../models/user");
+const Message = require("../models/message");
+const Booking = require("../models/booking");
+const Job = require("../models/job");
 const { protect } = require("../middleware/authMiddleware");
 
 const router = express.Router();
@@ -64,16 +67,13 @@ router.post("/register", async (req, res) => {
     // Generate token
     const token = generateToken(savedUser._id);
 
+    const userResponse = savedUser.toObject();
+    delete userResponse.password;
+
     res.status(201).json({
       message: "Registration successful!",
       token,
-      user: {
-        id: savedUser._id,
-        name: savedUser.name,
-        email: savedUser.email,
-        role: savedUser.role,
-        location: savedUser.location,
-      },
+      user: userResponse,
     });
   } catch (error) {
     console.error("❌ Register error detailed:", error);
@@ -139,15 +139,14 @@ router.post("/login", async (req, res) => {
     // Generate token
     const token = generateToken(user._id);
 
+    // Prepare user response (full data except password)
+    const userResponse = user.toObject();
+    delete userResponse.password;
+
     res.status(200).json({
       message: "Login successful!",
       token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
+      user: userResponse,
     });
   } catch (error) {
     console.error("Login error:", error);
@@ -166,6 +165,20 @@ router.get("/me", protect, async (req, res) => {
     res.status(200).json({ user });
   } catch (error) {
     console.error("Get user error:", error);
+    res.status(500).json({ message: "Server error." });
+  }
+});
+
+// GET /api/auth/user/:id - Get basic user profile by ID
+router.get("/user/:id", async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id)
+      .select("name email avatar role bio rating location lat long")
+      .lean();
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.status(200).json(user);
+  } catch (error) {
+    console.error("Get user by ID error:", error);
     res.status(500).json({ message: "Server error." });
   }
 });
@@ -210,6 +223,34 @@ router.put("/profile", protect, async (req, res) => {
   } catch (error) {
     console.error("Profile update error:", error);
     res.status(500).json({ message: "Server error during profile update." });
+  }
+});
+
+// GET /api/auth/notifications/count (Protected Route)
+router.get("/notifications/count", protect, async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    // 1. Unread Messages
+    const unreadMessages = await Message.countDocuments({
+      receiver: userId,
+      isRead: false
+    });
+
+    // 2. Pending Bookings (Applications/Proposals for Freelancer)
+    const pendingBookings = await Booking.countDocuments({
+      providerId: userId,
+      status: "Pending"
+    });
+
+    res.status(200).json({
+      chat: unreadMessages,
+      proposals: pendingBookings,
+      total: unreadMessages + pendingBookings
+    });
+  } catch (error) {
+    console.error("Notifications count error:", error);
+    res.status(500).json({ message: "Server error." });
   }
 });
 

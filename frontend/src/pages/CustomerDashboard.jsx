@@ -5,9 +5,26 @@ import { Search, Briefcase, Star, MessageSquare, ClipboardList } from 'lucide-re
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 
+import api from '@/utils/api';
+
 const CustomerDashboard = () => {
   const { user } = useAuth();
   const [activeHires, setActiveHires] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchActiveHires = async () => {
+      try {
+        const res = await api.get('/bookings/user/active');
+        setActiveHires(res.data);
+      } catch (err) {
+        console.error("Error fetching active hires:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchActiveHires();
+  }, []);
   
   const actions = [
     { label: 'Find Freelancers', desc: 'Browse available local talents.', icon: Search, to: '/services', color: 'text-indigo-500', bg: 'bg-indigo-500/10' },
@@ -72,7 +89,26 @@ const CustomerDashboard = () => {
         <CardContent>
           {activeHires.length > 0 ? (
             <div className="space-y-4">
-               {/* Display active hires here */}
+               {activeHires.map((hire) => (
+                 <div key={hire._id} className="flex items-center justify-between p-4 bg-muted/50 rounded-xl border border-border/50">
+                    <div className="flex items-center gap-4">
+                       <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold overflow-hidden">
+                          {hire.providerId?.avatar ? (
+                            <img src={hire.providerId.avatar} className="w-full h-full object-cover" />
+                          ) : (
+                            hire.providerId?.name?.charAt(0) || 'P'
+                          )}
+                       </div>
+                       <div>
+                          <p className="font-bold text-sm text-foreground">{hire.providerId?.name}</p>
+                          <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">{hire.serviceId?.title}</p>
+                       </div>
+                    </div>
+                    <Button asChild size="sm" variant="outline" className="h-8 text-[10px] font-black uppercase tracking-widest">
+                       <Link to="/active-hires">Manage</Link>
+                    </Button>
+                 </div>
+               ))}
             </div>
           ) : (
             <div className="py-12 flex flex-col items-center justify-center text-center border-2 border-dashed border-border/50 rounded-xl">

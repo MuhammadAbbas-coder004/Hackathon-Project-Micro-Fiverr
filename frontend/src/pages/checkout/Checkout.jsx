@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '@/utils/api';
 import {
   ShieldCheck, CreditCard, Lock, CheckCircle2,
   Sparkles, Loader2, ArrowRight, Receipt, LayoutDashboard,
@@ -188,12 +188,12 @@ const Checkout = () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await axios.get(`/api/services/${serviceId}`);
+        const res = await api.get(`/services/${serviceId}`);
         setService(res.data);
         setCustomAmount(res.data.price);
       } catch {
         try {
-          const res2 = await axios.get(`/api/service/${serviceId}`);
+          const res2 = await api.get(`/service/${serviceId}`);
           setService(res2.data);
           setCustomAmount(res2.data.price);
         } catch { setError('Service not found.'); }
@@ -213,6 +213,11 @@ const Checkout = () => {
     const freelancerId = service.providerId?._id || service.providerId || service.userId;
     if (!freelancerId) return setPayError('Freelancer info missing. Please refresh.');
 
+    console.log('💳 Initiating Payment Log:');
+    console.log(' - Service:', service.title);
+    console.log(' - Target Freelancer ID:', freelancerId);
+    console.log(' - Amount:', customAmount);
+
     const payload = {
       freelancerId,
       serviceId: service._id || serviceId,
@@ -223,9 +228,7 @@ const Checkout = () => {
     setProcessing(true);
     try {
       await new Promise(r => setTimeout(r, 2000)); // Hype delay
-      const res = await axios.post('/api/payment/fake-payment', payload, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await api.post('/payment/fake-payment', payload);
       if (res.data.success) {
         setCompletedData({
           ...res.data.transaction,

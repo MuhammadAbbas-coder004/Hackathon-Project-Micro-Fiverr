@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import axios from 'axios';
+import api from '@/utils/api';
 import { 
   User, 
   MapPin, 
@@ -89,8 +89,7 @@ const EditProfile = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const config = { headers: { Authorization: `Bearer ${token}` } };
-      const res = await axios.put('/api/auth/profile', formData, config);
+      const res = await api.put('/auth/profile', formData);
       updateUser(res.data?.user || formData);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
@@ -105,18 +104,18 @@ const EditProfile = () => {
   return (
     <div className="min-h-screen bg-[#0b0e14] text-slate-200 font-sans pb-32 relative overflow-x-hidden selection:bg-indigo-600 selection:text-white">
       
-      {/* ── Background Assets ── */}
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E')]" />
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1400px] h-[800px] bg-indigo-600/5 rounded-full blur-[160px] pointer-events-none opacity-40" />
+      {/* ── Background Assets (Optimized) ── */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_-20%,#4f46e515,transparent_50%)] pointer-events-none" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1400px] h-[800px] bg-indigo-600/5 rounded-full blur-[120px] pointer-events-none opacity-40" />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-24 sm:pt-32 space-y-8 sm:space-y-12 relative z-10">
         
-        {/* ── Header ── */}
+        {/* ── Header (Smooth) ── */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
            <motion.div 
-             initial={{ opacity: 0, x: -20 }}
-             animate={{ opacity: 1, x: 0 }}
-             className="px-6 py-4 sm:px-10 sm:py-6 bg-[#0c0f16]/90 backdrop-blur-3xl border border-white/10 rounded-[32px] sm:rounded-full ring-1 ring-white/5 flex items-center gap-4 sm:gap-8 shadow-2xl"
+             initial={{ opacity: 0, y: 10 }}
+             animate={{ opacity: 1, y: 0 }}
+             className="px-6 py-4 sm:px-10 sm:py-6 bg-[#0c0f16]/90 backdrop-blur-2xl border border-white/10 rounded-[32px] sm:rounded-full ring-1 ring-white/5 flex items-center gap-4 sm:gap-8 shadow-2xl"
            >
               <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-500 shrink-0">
                  <User size={24} className="sm:size-32" />

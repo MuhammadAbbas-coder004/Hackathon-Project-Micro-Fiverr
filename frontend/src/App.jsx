@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -129,6 +129,15 @@ const PublicRoute = ({ children }) => {
 
 
 
+const ChatRouteWrapper = () => {
+  const { user } = useAuth();
+  const location = useLocation();
+  if (user?.role === ROLES.FREELANCER) {
+    return <Navigate to={`/dashboard/provider/messages${location.search}`} state={location.state} replace />;
+  }
+  return <MainLayout><ChatPage /></MainLayout>;
+};
+
 function App() {
   return (
     <AuthProvider>
@@ -148,7 +157,7 @@ function App() {
           <Route path="/checkout/:serviceId" element={<MainLayout><ProtectedRoute><Checkout /></ProtectedRoute></MainLayout>} />
           <Route path="/track/:bookingId" element={<MainLayout><ProtectedRoute><LiveTracking /></ProtectedRoute></MainLayout>} />
           <Route path="/active-hires" element={<MainLayout><ProtectedRoute><ActiveHires /></ProtectedRoute></MainLayout>} />
-          <Route path="/chat" element={<MainLayout><ProtectedRoute><ChatPage /></ProtectedRoute></MainLayout>} />
+          <Route path="/chat" element={<ProtectedRoute><ChatRouteWrapper /></ProtectedRoute>} />
           <Route path="/review/:providerId" element={<MainLayout><ProtectedRoute><LeaveReview /></ProtectedRoute></MainLayout>} />
           <Route path="/profile" element={<MainLayout><ProtectedRoute><EditProfile /></ProtectedRoute></MainLayout>} />
 

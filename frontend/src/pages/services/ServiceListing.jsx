@@ -74,21 +74,34 @@ const ServiceCard = ({ service, navigate, idx }) => {
         <CardContent className="p-8 pb-4 flex-1 flex flex-col">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-1.5">
-              {[1, 2, 3, 4, 5].map((star) => (
-                 <FaStar 
-                   key={star} 
-                   size={14} 
-                   onClick={(e) => {
-                     e.preventDefault();
-                     e.stopPropagation();
-                     setUserRating(star);
-                   }}
-                   className={cn(
-                     "cursor-pointer transition-all hover:scale-150 active:scale-90",
-                     star <= userRating ? "text-indigo-500 fill-indigo-500" : "text-white/10 hover:text-indigo-400"
-                   )} 
-                 />
-              ))}
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <FaStar 
+                      key={star} 
+                      size={14} 
+                      onClick={async (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setUserRating(star);
+                        
+                        // 🔥 Save rating to database in real-time
+                        try {
+                          console.log(`📡 Syncing ${star}-star rating for provider: ${service.providerId?._id}`);
+                          await api.post('/reviews', {
+                            receiverId: service.providerId?._id || service.providerId,
+                            rating: star,
+                            comment: "Highly rated through quick-sync."
+                          });
+                          console.log('✅ Rating synced with Nexus Network');
+                        } catch (err) {
+                          console.error('❌ Sync failed:', err.message);
+                        }
+                      }}
+                      className={cn(
+                        "cursor-pointer transition-all hover:scale-150 active:scale-90",
+                        star <= (userRating || service.providerId?.rating || 0) ? "text-indigo-500 fill-indigo-500" : "text-white/10 hover:text-indigo-400"
+                      )} 
+                    />
+                  ))}
               <span className="text-[9px] font-black text-slate-500 ml-1 uppercase tracking-widest leading-none">Sync</span>
             </div>
             <div className="flex items-center gap-1.5 bg-white/5 px-2.5 py-1 rounded-full border border-white/10">

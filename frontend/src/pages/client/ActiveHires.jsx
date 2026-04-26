@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '@/utils/api';
 import { Navigation, MapPin, Calendar, ArrowRight, Loader2 } from 'lucide-react';
 
 const ActiveHires = () => {
@@ -10,10 +10,7 @@ const ActiveHires = () => {
   useEffect(() => {
     const fetchBookings = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const res = await axios.get('/api/bookings/user/active', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const res = await api.get('/bookings/user/active');
         setBookings(res.data);
       } catch (err) {
         console.error("Error fetching hires:", err);

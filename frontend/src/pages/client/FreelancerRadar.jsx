@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import axios from 'axios';
+import api from '@/utils/api';
 import { useAuth } from '../../context/AuthContext';
 import socket from '../../utils/socket';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -32,74 +32,194 @@ const FlyToLocation = ({ center }) => {
   return null;
 };
 
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  if (lat1 === undefined || lon1 === undefined || lat2 === undefined || lon2 === undefined) return null;
+  const R = 6371; // km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const res = (R * c).toFixed(1);
+  console.log(`📐 Distance Calc: (${lat1},${lon1}) to (${lat2},${lon2}) = ${res}km`);
+  return res;
+};
+
 /* ─── Custom map markers ─── */
-const freelancerMarker = (isSelected) => L.divIcon({
+const freelancerMarker = (isSelected, avatar, name) => L.divIcon({
   className: '',
   html: `
-    <div style="position:relative;width:28px;height:28px;">
+    <div class="marker-3d-wrapper" style="position:relative;width:100px;height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+      <!-- Searchlight Beam (RGB) -->
       <div style="
-        width:28px;height:28px;
-        background:${isSelected ? '#4f46e5' : '#0c0f16'};
-        border-radius:50%;
-        border:3px solid ${isSelected ? '#4f46e5' : '#4f46e5'};
-        box-shadow: 0 0 ${isSelected ? '20px' : '10px'} rgba(79,70,229,${isSelected ? '0.8' : '0.4'});
-        display:flex;align-items:center;justify-content:center;
+        position:absolute;bottom:10px;
+        width:40px;height:60px;
+        background:linear-gradient(to top, var(--radar-primary), transparent);
+        clip-path: polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%);
+        filter:blur(5px);
+        animation: beamPulse 2s infinite alternate, colorCycle 8s linear infinite;
       "></div>
-      ${isSelected ? `<div style="
-        position:absolute;inset:-8px;
-        border:2px solid rgba(79,70,229,0.3);
-        border-radius:50%;
-        animation:radarPulse 1.5s ease-out infinite;
-      "></div>` : ''}
+      
+      <!-- Drone Body -->
+      <div class="marker-body" style="
+        width:60px;height:60px;
+        position:relative;
+        animation: droneFloat 3s ease-in-out infinite;
+        z-index:10;
+      ">
+        <!-- 4 Arms -->
+        <div style="position:absolute;inset:0;border:2px solid #334155;border-radius:50%;opacity:0.5;"></div>
+        <div style="position:absolute;top:50%;left:0;right:0;height:2px;background:#334155;transform:rotate(45deg);"></div>
+        <div style="position:absolute;top:50%;left:0;right:0;height:2px;background:#334155;transform:rotate(-45deg);"></div>
+
+        <!-- Propellers (RGB) -->
+        ${[0, 1, 2, 3].map(i => `
+          <div style="
+            position:absolute;
+            width:16px;height:2px;
+            background:var(--radar-primary);
+            border-radius:10px;
+            top:${i < 2 ? '0' : '100%'};
+            left:${i % 2 === 0 ? '0' : '100%'};
+            transform-origin:center;
+            animation: propSpin 0.2s linear infinite, colorCycle 8s linear infinite;
+            margin-top:-1px;
+            margin-left:-8px;
+          "></div>
+        `).join('')}
+
+        <!-- Center Core -->
+        <div style="
+          position:absolute;inset:10px;
+          background:#1e293b;
+          border-radius:12px;
+          border:2px solid ${isSelected ? 'var(--radar-primary)' : '#4f46e5'};
+          display:flex;align-items:center;justify-content:center;
+          overflow:hidden;
+          box-shadow:0 5px 15px rgba(0,0,0,0.5);
+          animation: ${isSelected ? 'colorCycleBorder 8s linear infinite' : 'none'};
+        ">
+          ${avatar 
+            ? `<img src="${avatar}" style="width:100%;height:100%;object-fit:cover;" />` 
+            : `<span style="color:white;font-weight:900;font-size:16px;">${name?.charAt(0) || 'D'}</span>`
+          }
+        </div>
+      </div>
+
+      <!-- Name Bubble (RGB) -->
+      <div style="
+        position:absolute;top:-10px;
+        background:rgba(0,0,0,0.6);
+        backdrop-filter:blur(4px);
+        padding:2px 10px;
+        border-radius:8px;
+        border:1px solid var(--radar-primary);
+        box-shadow:0 0 15px var(--radar-primary);
+        animation: droneFloat 3s ease-in-out infinite, colorCycleBorder 8s linear infinite, colorCycleShadow 8s linear infinite;
+      ">
+        <span style="color:white;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;">${name || 'DRONE'}</span>
+      </div>
     </div>
   `,
-  iconSize: [28, 28],
-  iconAnchor: [14, 14],
+  iconSize: [120, 160],
+  iconAnchor: [60, 130],
 });
 
 const clientMarker = L.divIcon({
   className: '',
   html: `
-    <div style="position:relative;width:20px;height:20px;">
-      <div style="width:20px;height:20px;background:#ffffff;border-radius:50%;border:3px solid #09090b;box-shadow:0 0 15px rgba(255,255,255,0.5);"></div>
-      <div style="position:absolute;inset:-6px;border:2px solid rgba(255,255,255,0.2);border-radius:50%;animation:radarPulse 2s ease-out infinite;"></div>
+    <div class="marker-3d-wrapper" style="position:relative;width:100px;height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+      <!-- Master Searchlight (RGB) -->
+      <div style="
+        position:absolute;bottom:10px;
+        width:60px;height:80px;
+        background:linear-gradient(to top, var(--radar-primary), transparent);
+        clip-path: polygon(15% 0%, 85% 0%, 100% 100%, 0% 100%);
+        filter:blur(8px);
+        animation: beamPulse 1.5s infinite alternate, colorCycle 8s linear infinite;
+      "></div>
+      
+      <!-- Command Satellite Body -->
+      <div class="marker-body" style="
+        width:70px;height:70px;
+        position:relative;
+        animation: droneFloat 2.5s ease-in-out infinite;
+        z-index:20;
+      ">
+        <!-- Rotating Radar Rings (RGB) -->
+        <div style="
+          position:absolute;inset:-10px;
+          border:2px dashed var(--radar-primary);
+          border-radius:50%;
+          animation: propSpin 4s linear infinite, colorCycleBorder 8s linear infinite;
+          opacity:0.6;
+        "></div>
+        <div style="
+          position:absolute;inset:-20px;
+          border:1px solid var(--radar-primary);
+          border-radius:50%;
+          animation: propSpin 8s linear reverse infinite, colorCycleBorder 8s linear infinite;
+          opacity:0.3;
+        "></div>
+
+        <!-- Master Core -->
+        <div style="
+          position:absolute;inset:0;
+          background:radial-gradient(circle at 30% 30%, #1e293b, #000000);
+          border-radius:20px;
+          border:3px solid var(--radar-primary);
+          display:flex;align-items:center;justify-content:center;
+          box-shadow:0 0 30px var(--radar-primary);
+          animation: colorCycleBorder 8s linear infinite, colorCycleShadow 8s linear infinite;
+        ">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        </div>
+      </div>
+
+      <!-- YOU / MASTER NODE Label (RGB) -->
+      <div style="
+        position:absolute;top:-20px;
+        background:#000000;
+        color:white;
+        padding:2px 12px;
+        border-radius:20px;
+        font-size:10px;
+        font-weight:900;
+        text-transform:uppercase;
+        letter-spacing:0.2em;
+        box-shadow:0 0 20px var(--radar-primary);
+        border:2px solid var(--radar-primary);
+        animation: droneFloat 2.5s ease-in-out infinite, colorCycleBorder 8s linear infinite, colorCycleShadow 8s linear infinite;
+      ">YOU</div>
     </div>
   `,
-  iconSize: [20, 20],
-  iconAnchor: [10, 10],
+  iconSize: [120, 160],
+  iconAnchor: [60, 130],
 });
 
 /* ─── Loading Overlay ─── */
 const RadarLoader = () => (
-  <div className="h-screen w-full flex items-center justify-center bg-[#0b0e14]">
-    <div className="flex flex-col items-center gap-8">
-      {/* Radar animation */}
-      <div className="relative w-40 h-40">
-        <div className="absolute inset-0 rounded-full border border-indigo-500/10" />
-        <div className="absolute inset-6 rounded-full border border-indigo-500/20" />
-        <div className="absolute inset-12 rounded-full border border-indigo-500/30" />
-        <div className="absolute inset-16 rounded-full bg-indigo-600/10 flex items-center justify-center border border-indigo-500/20">
-          <Radio className="h-8 w-8 text-indigo-500 animate-pulse" />
-        </div>
-        {/* Sweep */}
-        <div className="absolute inset-0 rounded-full overflow-hidden">
-          <div
-            className="absolute top-1/2 left-1/2 h-20 w-[3px] bg-gradient-to-t from-indigo-500/0 to-indigo-500/80 origin-bottom blur-[1px]"
-            style={{ animation: 'radarSweep 2.5s linear infinite' }}
-          />
-        </div>
-      </div>
-      <div className="text-center space-y-3">
-        <p className="font-black text-white text-base uppercase tracking-[0.6em]">Scanning Nearby Nodes</p>
-        <div className="flex items-center justify-center gap-3">
-           <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-ping" />
-           <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Synchronizing GPS Matrix…</p>
-        </div>
+  <div className="h-screen w-full bg-[#0c0f16] flex flex-col items-center justify-center relative overflow-hidden">
+    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(79,70,229,0.1)_0%,transparent_70%)]" />
+    <div className="relative">
+      <div className="w-32 h-32 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
+      <div className="absolute inset-0 flex items-center justify-center">
+        <Radio className="text-indigo-500 animate-pulse" size={40} />
       </div>
     </div>
-    <style>{`
-      @keyframes radarSweep { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-    `}</style>
+    <div className="mt-12 text-center space-y-4">
+      <h2 className="text-3xl font-black text-white uppercase tracking-[0.4em] animate-pulse">Initializing Radar</h2>
+      <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.5em]">Synchronizing Intelligence Nodes...</p>
+    </div>
+    <div className="absolute bottom-20 left-1/2 -translate-x-1/2 w-64 h-1 bg-white/5 rounded-full overflow-hidden">
+      <motion.div 
+        initial={{ x: '-100%' }}
+        animate={{ x: '100%' }}
+        transition={{ repeat: Infinity, duration: 1.5, ease: 'linear' }}
+        className="w-1/2 h-full bg-indigo-500"
+      />
+    </div>
   </div>
 );
 
@@ -119,8 +239,12 @@ const FreelancerListItem = ({ freelancer, isSelected, onClick }) => {
       )}
     >
       <div className="relative shrink-0">
-        <div className="h-14 w-14 rounded-2xl bg-[#0c0f16] flex items-center justify-center font-black text-white border border-white/10 shadow-2xl group-hover:border-indigo-500/40 transition-all">
-          {initials}
+        <div className="h-14 w-14 rounded-2xl bg-[#0c0f16] flex items-center justify-center font-black text-white border border-white/10 shadow-2xl group-hover:border-indigo-500/40 transition-all overflow-hidden">
+          {freelancer.avatar ? (
+            <img src={freelancer.avatar} alt={freelancer.name} className="w-full h-full object-cover" />
+          ) : (
+            initials
+          )}
         </div>
         <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-emerald-500 border-4 border-[#0c0f16] rounded-full" />
       </div>
@@ -138,6 +262,12 @@ const FreelancerListItem = ({ freelancer, isSelected, onClick }) => {
           </div>
           {freelancer.location && (
             <span className="text-[9px] font-black text-slate-600 truncate uppercase tracking-widest">{freelancer.location}</span>
+          )}
+          {freelancer.distance && (
+            <div className="flex items-center gap-1 bg-indigo-500/10 px-2 py-0.5 rounded text-[9px] font-black text-indigo-400">
+               <Navigation size={10} />
+               {freelancer.distance} KM
+            </div>
           )}
         </div>
       </div>
@@ -173,8 +303,12 @@ const FreelancerDetailPanel = ({ selected, sharing, onStartSharing, onStopSharin
           <div className="p-10 space-y-8 relative z-10">
             <div className="flex items-center gap-8">
               <div className="relative">
-                <div className="h-24 w-24 rounded-3xl bg-indigo-600 flex items-center justify-center font-black text-white text-3xl border-2 border-indigo-500/30 shadow-2xl">
-                  {initials}
+                <div className="h-24 w-24 rounded-3xl bg-indigo-600 flex items-center justify-center font-black text-white text-3xl border-2 border-indigo-500/30 shadow-2xl overflow-hidden">
+                  {selected.avatar ? (
+                    <img src={selected.avatar} alt={selected.name} className="w-full h-full object-cover" />
+                  ) : (
+                    initials
+                  )}
                 </div>
                 <div className="absolute -bottom-2 -right-2 w-7 h-7 bg-emerald-500 border-4 border-[#0c0f16] rounded-full flex items-center justify-center">
                    <div className="w-1.5 h-1.5 bg-white rounded-full animate-ping" />
@@ -187,7 +321,13 @@ const FreelancerDetailPanel = ({ selected, sharing, onStartSharing, onStopSharin
                     <Star className="h-4 w-4 fill-indigo-500 text-indigo-500" />
                     <span className="text-sm font-black text-white">{selected.rating || '5.0'}</span>
                   </div>
-                  {selected.location && (
+                  {selected.distance && (
+                    <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-4 py-1.5 rounded-full backdrop-blur-xl">
+                      <Navigation className="h-4 w-4 text-emerald-500" />
+                      <span className="text-sm font-black text-white">{selected.distance} KM AWAY</span>
+                    </div>
+                  )}
+                  {selected.location && !selected.distance && (
                     <span className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em]">{selected.location}</span>
                   )}
                 </div>
@@ -240,29 +380,117 @@ const FreelancerRadar = () => {
   const [sharing, setSharing]         = useState(false);
   const [watchId, setWatchId]         = useState(null);
   const [searchQ, setSearchQ]         = useState('');
+  const [locSearch, setLocSearch]     = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  useEffect(() => {
-    navigator.geolocation.getCurrentPosition(pos => {
-      const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      setMyPos(coords);
-      fetchNearby(coords.lat, coords.lng);
-    }, () => setLoading(false));
-  }, [token]);
+  const handleGlobalSearch = async (e) => {
+    if (e) e.preventDefault();
+    if (!locSearch.trim()) return;
+    
+    setLoading(true);
+    try {
+      console.log("🔍 Scanning Location:", locSearch);
+      // Adding a more detailed query and limiting results
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locSearch)}&limit=1&addressdetails=1`);
+      const data = await res.json();
+      
+      if (data && data.length > 0) {
+        const target = data[0];
+        const lat = parseFloat(target.lat);
+        const lon = parseFloat(target.lon);
+        
+        console.log(`✅ Success! Found: ${target.display_name} at [${lat}, ${lon}]`);
+        
+        // Update coordinates and focus
+        const newCoords = [lat, lon];
+        setFocusPos(newCoords);
+        setMyPos({ lat, lng: lon }); // Temporarily set myPos here to see nearby freelancers from searched point
+        
+        // Fetch freelancers for the new location
+        await fetchNearby(lat, lon);
+        
+        // Close sidebar on mobile for better view
+        if (window.innerWidth < 768) setSidebarOpen(false);
+      } else {
+        alert(`Could not find "${locSearch}". Try adding city name or country.`);
+      }
+    } catch (err) {
+      console.error("❌ Search Error:", err);
+      alert("Radar scan failed. Please check your internet connection.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    if (freelancers.length > 0 && routerLocation.state?.focusFreelancer) {
-      const target = freelancers.find(f => f._id === routerLocation.state.focusFreelancer);
-      if (target) { setSelected(target); setFocusPos([target.lat, target.long]); }
+    const params = new URLSearchParams(routerLocation.search);
+    const focusId = params.get('f');
+
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      setMyPos(coords);
+      console.log("📍 My Position:", coords);
+      
+      // If we have a focusId, let's make sure we get that specific freelancer
+      if (focusId) {
+        try {
+          const res = await api.get(`/auth/user/${focusId}`);
+          const focusedUser = res.data;
+          console.log("🎯 Focused User Data:", focusedUser);
+          if (focusedUser && focusedUser.role === 'freelancer') {
+            // Calculate distance manually since this is a single fetch
+            const dist = calculateDistance(coords.lat, coords.lng, focusedUser.lat || focusedUser.latitude, focusedUser.long || focusedUser.longitude);
+            const userWithDist = { ...focusedUser, distance: dist };
+            
+            setSelected(userWithDist);
+            setFocusPos([focusedUser.lat || focusedUser.latitude, focusedUser.long || focusedUser.longitude]);
+          }
+        } catch (err) {
+          console.error("Error fetching focused user:", err);
+        }
+      }
+
+      fetchNearby(coords.lat, coords.lng);
+    }, (err) => {
+      console.error("Geolocation error:", err);
+      setLoading(false);
+    });
+  }, [token, routerLocation.search]);
+
+  useEffect(() => {
+    if (freelancers.length > 0) {
+      const params = new URLSearchParams(routerLocation.search);
+      const focusId = params.get('f');
+      const focusLat = params.get('lat');
+      const focusLng = params.get('lng');
+
+      if (focusId) {
+        const target = freelancers.find(f => f._id === focusId);
+        if (target) {
+          setSelected(target);
+          setFocusPos([target.lat, target.long]);
+        } else if (focusLat && focusLng) {
+           // If freelancer not in list (maybe too far), manually focus on coordinates
+           setFocusPos([parseFloat(focusLat), parseFloat(focusLng)]);
+        }
+      } else if (routerLocation.state?.focusFreelancer) {
+        const target = freelancers.find(f => f._id === routerLocation.state.focusFreelancer);
+        if (target) { setSelected(target); setFocusPos([target.lat, target.long]); }
+      }
     }
   }, [freelancers, routerLocation]);
 
   const fetchNearby = async (lat, lng) => {
     try {
-      const res = await axios.get(`/api/location/nearby?lat=${lat}&lng=${lng}`, {
-        headers: { Authorization: `Bearer ${token}` },
+      const res = await api.get(`/location/nearby?lat=${lat}&lng=${lng}`);
+      setFreelancers(prev => {
+        // Merge with already selected freelancer if they are not in the nearby list
+        const nearby = res.data;
+        if (selected && !nearby.find(f => f._id === selected._id)) {
+          return [selected, ...nearby];
+        }
+        return nearby;
       });
-      setFreelancers(res.data);
     } catch (err) {
       console.error('Nearby fetch error', err);
     } finally {
@@ -304,53 +532,74 @@ const FreelancerRadar = () => {
   if (loading) return <RadarLoader />;
 
   return (
-    <div className="h-screen w-full flex overflow-hidden bg-[#0b0e14] selection:bg-indigo-600 selection:text-white relative font-sans">
+    <div className="h-screen w-full flex bg-[#0c0f16] overflow-hidden font-sans select-none relative">
+      
+      {/* ── NASA/Military Background Assets ── */}
+      <div className="absolute inset-0 z-0 pointer-events-none opacity-20">
+        <div className="absolute top-0 left-0 w-full h-full bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%] pointer-events-none" />
+      </div>
+      <div className="absolute -top-[20%] -left-[10%] w-[60%] h-[60%] bg-indigo-600/10 rounded-full blur-[150px] pointer-events-none animate-pulse" />
+      <div className="absolute -bottom-[20%] -right-[10%] w-[60%] h-[60%] bg-blue-600/5 rounded-full blur-[150px] pointer-events-none" />
       
       {/* ── LEFT SIDEBAR ── */}
       <AnimatePresence>
         {sidebarOpen && (
           <motion.aside
-            initial={{ x: -380, opacity: 0 }}
+            initial={{ x: -400, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
-            exit={{ x: -380, opacity: 0 }}
+            exit={{ x: -400, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 200, damping: 25 }}
-            className="w-[400px] shrink-0 bg-[#0c0f16]/80 backdrop-blur-3xl border-r border-white/10 flex flex-col z-[500] relative overflow-hidden ring-1 ring-white/5"
+            className="w-[400px] shrink-0 bg-[#0c0f16]/80 backdrop-blur-3xl border-r border-white/5 flex flex-col z-[500] relative overflow-hidden shadow-[50px_0_100px_rgba(0,0,0,0.5)]"
           >
             {/* Background Glow */}
             <div className="absolute top-0 left-0 w-64 h-64 bg-indigo-600/10 blur-[100px] rounded-full pointer-events-none" />
 
-            {/* Header Removed to ensure no navbar-like element exists */}
+            {/* Sidebar Header */}
             <div className="p-10 pb-8 relative z-10 flex flex-col gap-6">
               
-              {/* Back to Home Button - Floating Style */}
+              {/* Back to Home Button */}
               <button 
                 onClick={() => navigate('/')}
                 className="flex items-center gap-4 text-slate-500 hover:text-white transition-all group w-fit"
               >
-                <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-indigo-600 group-hover:border-indigo-500 transition-all shadow-xl shadow-black/20">
-                   <ChevronLeft size={22} />
+                <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-indigo-600 group-hover:border-indigo-500 transition-all shadow-xl shadow-black/20">
+                   <ChevronLeft size={18} />
                 </div>
-                <div className="flex flex-col">
+                <div className="flex flex-col text-left">
                   <span className="text-[10px] font-black uppercase tracking-[0.4em]">Back to Nexus</span>
-                  <span className="text-[8px] font-bold text-slate-700 uppercase tracking-widest mt-0.5">Exit Intelligence Radar</span>
                 </div>
               </button>
 
-              <div className="h-px bg-white/5 w-full mt-4" />
+              <div className="flex items-center gap-4 mt-4">
+                <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-600/20">
+                  <Radio className="text-white animate-pulse" size={24} />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black text-white tracking-tighter uppercase leading-none">Nexus <span className="text-indigo-500">Radar</span></h2>
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mt-1.5">Intelligence v4.0</p>
+                </div>
+              </div>
+              <div className="h-px bg-white/5 w-full mt-2" />
             </div>
 
-            {/* Search */}
+            {/* Global Location Search */}
             <div className="px-10 mb-8 relative z-10">
-              <div className="relative">
-                <Search size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-600" />
+              <form onSubmit={handleGlobalSearch} className="relative group">
+                <div className="absolute left-5 top-1/2 -translate-y-1/2 flex items-center gap-2 text-indigo-500">
+                   <Search size={16} />
+                   <div className="w-px h-3 bg-white/10" />
+                </div>
                 <input
                   type="text"
-                  value={searchQ}
-                  onChange={e => setSearchQ(e.target.value)}
-                  placeholder="IDENTIFY NODE..."
-                  className="w-full pl-14 pr-6 py-5 bg-white/5 border border-white/10 rounded-[24px] text-[11px] font-black text-white placeholder:text-slate-800 outline-none focus:border-indigo-500/40 transition-all uppercase tracking-[0.2em] ring-1 ring-white/5 shadow-2xl"
+                  value={locSearch}
+                  onChange={e => setLocSearch(e.target.value)}
+                  placeholder="SCAN CITY OR AREA..."
+                  className="w-full pl-14 pr-10 py-5 bg-white/5 border border-white/10 rounded-[24px] text-[10px] font-black text-white placeholder:text-slate-800 outline-none focus:border-indigo-500/40 transition-all uppercase tracking-[0.2em] ring-1 ring-white/5 shadow-2xl"
                 />
-              </div>
+                <button type="submit" className="absolute right-4 top-1/2 -translate-y-1/2 text-indigo-500 hover:text-white transition-colors">
+                  <Navigation size={14} />
+                </button>
+              </form>
             </div>
 
             {/* Stats row */}
@@ -431,13 +680,31 @@ const FreelancerRadar = () => {
           )}
         </div>
 
-        {/* Leaflet Map */}
-        <MapContainer
-          center={myPos ? [myPos.lat, myPos.lng] : [24.8607, 67.0011]}
-          zoom={14}
-          zoomControl={false}
-          className="h-full w-full z-0"
-        >
+        {/* Action Buttons */}
+        <div className="absolute bottom-12 right-10 z-[1000] flex flex-col gap-4">
+          <button
+            onClick={() => myPos && setFocusPos([myPos.lat, myPos.lng])}
+            className="w-14 h-14 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl flex items-center justify-center shadow-[0_20px_40px_rgba(79,70,229,0.3)] transition-all active:scale-95 group"
+            title="Focus My Location"
+          >
+            <Navigation size={22} className="group-hover:rotate-12 transition-transform" />
+          </button>
+        </div>
+
+        {/* Leaflet Map - Maximum 3D Depth */}
+        <div className="h-full w-full perspective-2000">
+           <div className="h-full w-full transition-transform duration-1000 ease-out preserve-3d" 
+                style={{ 
+                  transform: 'rotateX(15deg) scale(1.1)',
+                  transformOrigin: 'bottom center',
+                  willChange: 'transform'
+                }}>
+            <MapContainer
+              center={myPos ? [myPos.lat, myPos.lng] : [24.8607, 67.0011]}
+              zoom={14}
+              zoomControl={false}
+              className="h-full w-full z-0"
+            >
           <TileLayer
             url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
             attribution='&copy; <a href="https://carto.com/">CARTO</a>'
@@ -454,9 +721,9 @@ const FreelancerRadar = () => {
 
           {freelancers.map(f => (
             <Marker
-              key={f._id}
-              position={[f.lat, f.long]}
-              icon={freelancerMarker(selected?._id === f._id)}
+              key={f._id || f.id}
+              position={[f.lat || f.latitude, f.long || f.longitude]}
+              icon={freelancerMarker(selected?._id === (f._id || f.id) || selected?.id === (f._id || f.id), f.avatar, f.name)}
               eventHandlers={{ click: () => handleSelect(f) }}
             >
               <Popup>
@@ -479,19 +746,82 @@ const FreelancerRadar = () => {
 
         {/* Freelancer Detail Card */}
         {selected && (
-          <FreelancerDetailPanel
-            selected={selected}
-            sharing={sharing}
-            onStartSharing={startSharing}
-            onStopSharing={stopSharing}
-            onClose={() => { setSelected(null); stopSharing(); }}
-          />
+          <div className="absolute inset-x-0 bottom-0 z-[2000] p-10 pointer-events-none">
+            <FreelancerDetailPanel
+              selected={selected}
+              sharing={sharing}
+              onStartSharing={startSharing}
+              onStopSharing={stopSharing}
+              onClose={() => { setSelected(null); stopSharing(); }}
+            />
+          </div>
         )}
-      </div>
+        </div>
+        </div>
+        </div>
 
-      {/* Global styles */}
       <style>{`
-        .leaflet-container { background: #0b0e14 !important; }
+        :root {
+          --radar-primary: #4f46e5;
+        }
+        
+        @keyframes colorCycle {
+          0% { background-color: hsl(0, 70%, 60%); }
+          20% { background-color: hsl(72, 70%, 60%); }
+          40% { background-color: hsl(144, 70%, 60%); }
+          60% { background-color: hsl(216, 70%, 60%); }
+          80% { background-color: hsl(288, 70%, 60%); }
+          100% { background-color: hsl(360, 70%, 60%); }
+        }
+        
+        @keyframes colorCycleBorder {
+          0% { border-color: hsl(0, 100%, 60%); }
+          100% { border-color: hsl(360, 100%, 60%); }
+        }
+        
+        @keyframes colorCycleShadow {
+          0% { box-shadow: 0 0 30px hsl(0, 100%, 60%); }
+          100% { box-shadow: 0 0 30px hsl(360, 100%, 60%); }
+        }
+
+        .perspective-2000 { perspective: 2000px; }
+        .preserve-3d { transform-style: preserve-3d; }
+        .leaflet-container { background: transparent !important; }
+        
+        /* Scanline Anim */
+        @keyframes scanline {
+          0% { transform: translateY(-100%); }
+          100% { transform: translateY(100%); }
+        }
+        
+        .marker-body:hover {
+          filter: brightness(1.2) contrast(1.1);
+        }
+        
+        @keyframes ringPulse {
+          0% { transform: scale(1); opacity: 1; }
+          100% { transform: scale(3); opacity: 0; }
+        }
+        @keyframes propSpin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        @keyframes droneFloat {
+          0%, 100% { transform: translateY(0) rotate(0deg); }
+          50% { transform: translateY(-15px) rotate(2deg); }
+        }
+        @keyframes beamPulse {
+          0% { opacity: 0.3; transform: scaleX(1); }
+          100% { opacity: 0.6; transform: scaleX(1.2); }
+        }
+        @keyframes shadowScale {
+          0%, 100% { transform: scale(1); opacity: 0.4; }
+          50% { transform: scale(0.7); opacity: 0.2; }
+        }
+        @keyframes radarPulse {
+          0%   { transform: scale(0.8); opacity: 1; }
+          100% { transform: scale(2.5); opacity: 0; }
+        }
         .leaflet-popup-content-wrapper {
           background: rgba(12,15,22,0.98) !important;
           border: 1px solid rgba(255,255,255,0.15) !important;
@@ -523,10 +853,6 @@ const FreelancerRadar = () => {
         .leaflet-control-zoom a:hover { 
           background: rgba(79,70,229,0.2) !important; 
           color: #818cf8 !important;
-        }
-        @keyframes radarPulse {
-          0%   { transform: scale(1); opacity: 0.6; }
-          100% { transform: scale(1.8); opacity: 0; }
         }
       `}</style>
     </div>

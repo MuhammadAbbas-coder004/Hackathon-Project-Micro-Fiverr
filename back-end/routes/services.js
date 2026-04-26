@@ -7,7 +7,7 @@ const { protect, authorize } = require("../middleware/authMiddleware");
 router.get("/", async (req, res) => {
   try {
     const services = await Service.find()
-      .populate("providerId", "name email location lat long avatar")
+      .populate("providerId", "name email location lat long avatar rating reviewCount")
       .sort({ createdAt: -1 });
     res.status(200).json(services);
   } catch (error) {
@@ -30,13 +30,20 @@ router.get("/:id", async (req, res) => {
   try {
     const cleanId = req.params.id.trim();
     console.log(`🔍 [Fetching] Service ID: "${cleanId}"`);
-    const service = await Service.findById(cleanId).populate("providerId", "name email location lat long avatar balance");
-    if (!service) {
-      console.log(`❌ [Not Found] Service ID: "${cleanId}"`);
-      return res.status(404).json({ message: "Service not found" });
+    
+    const today = new Date().toISOString().split('T')[0];
+    const service = await Service.findById(cleanId);
+    
+    if (service) {
+      service.views += 1;
+      const hIdx = service.viewHistory.findIndex(h => h.date === today);
+      if (hIdx > -1) service.viewHistory[hIdx].count += 1;
+      else service.viewHistory.push({ date: today, count: 1 });
+      await service.save();
+      const populated = await Service.findById(cleanId).populate("providerId", "name email location lat long avatar balance rating reviewCount");
+      return res.status(200).json(populated);
     }
-    console.log(`✅ [Found] Service: ${service.title}`);
-    res.status(200).json(service);
+    return res.status(404).json({ message: "Service not found" });
   } catch (error) {
     console.error(`🔥 [Error] Fetching Service ${req.params.id}:`, error.message);
     res.status(500).json({ message: "Error fetching service detail", error: error.message });
@@ -45,10 +52,18 @@ router.get("/:id", async (req, res) => {
 
 // Alias for singular /api/service/:id
 router.get("/service/:id", async (req, res) => {
-  const cleanId = req.params.id.trim();
-  const service = await Service.findById(cleanId).populate("providerId", "name email location lat long avatar balance");
-  if (!service) return res.status(404).json({ message: "Service not found" });
-  res.json(service);
+  const today = new Date().toISOString().split('T')[0];
+  const service = await Service.findById(cleanId);
+  if (service) {
+    service.views += 1;
+    const hIdx = service.viewHistory.findIndex(h => h.date === today);
+    if (hIdx > -1) service.viewHistory[hIdx].count += 1;
+    else service.viewHistory.push({ date: today, count: 1 });
+    await service.save();
+    const populated = await Service.findById(cleanId).populate("providerId", "name email location lat long avatar balance rating reviewCount");
+    return res.json(populated);
+  }
+  return res.status(404).json({ message: "Service not found" });
 });
 
 // POST /api/services - Create a new service

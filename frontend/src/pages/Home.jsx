@@ -294,9 +294,18 @@ const Home = () => {
                               </span>
                             </div>
                           </div>
-                          <div className="flex items-center gap-1.5 bg-white/5 px-2.5 py-1 rounded-full border border-white/10">
-                            <FaStar size={10} className="fill-indigo-500 text-indigo-500" />
-                            <span className="text-[10px] font-black text-slate-200">4.9</span>
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-1.5 bg-white/5 px-2.5 py-1 rounded-full border border-white/10">
+                              <FaStar size={10} className="fill-indigo-500 text-indigo-500" />
+                              <span className="text-[10px] font-black text-slate-200">
+                                {service.providerId?.rating || '0'} 
+                                <span className="text-slate-500 ml-1">({service.providerId?.reviewCount || 0})</span>
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1.5 bg-white/5 px-2.5 py-1 rounded-full border border-white/10 opacity-60">
+                              <FaChartLine size={10} className="text-indigo-400" />
+                              <span className="text-[10px] font-black text-slate-200">{service.views || 0}</span>
+                            </div>
                           </div>
                         </div>
 

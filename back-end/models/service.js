@@ -38,6 +38,16 @@ const serviceSchema = new mongoose.Schema(
       type: Number,
       default: 5,
     },
+    views: {
+      type: Number,
+      default: 0,
+    },
+    viewHistory: [
+      {
+        date: String,
+        count: { type: Number, default: 0 }
+      }
+    ],
   },
   {
     timestamps: true,
